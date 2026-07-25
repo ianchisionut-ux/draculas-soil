@@ -6,6 +6,7 @@ import { encrypt, decrypt } from "./crypto";
 const ENCRYPTED_KEYS = new Set([
   "stripe_secret_key",
   "stripe_webhook_secret",
+  "resend_api_key",
 ]);
 
 // All settings the admin dashboard can read/write, with sane fallbacks so
@@ -29,6 +30,9 @@ export const SETTING_DEFAULTS = {
   story_title: "The legend of the world's most famous vampire",
   story_text:
     "At the foot of the Carpathians, where fog gathers over centuries-old walls, lies the soil that inspired the legend of Dracula. Every jar is hand-collected near Bran Castle and carefully packaged for collectors, folklore enthusiasts, and lovers of Transylvanian mystery alike.",
+  resend_api_key: "",
+  email_from: "Dracula's Soil <onboarding@resend.dev>",
+  order_emails_enabled: "true",
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
@@ -36,9 +40,20 @@ export type SettingKey = keyof typeof SETTING_DEFAULTS;
 // Fetches every raw setting row once per request. React's cache() dedupes
 // this across every call within the same render (root layout, site layout,
 // page, etc. all previously triggered separate DB round-trips).
+//
+// Falls back to an empty map (→ SETTING_DEFAULTS) if the database is
+// temporarily unreachable, instead of throwing. This matters most at build
+// time: Next.js may try to statically prerender pages that read settings,
+// and a transient DB hiccup (e.g. a serverless Postgres waking up) should
+// never fail the whole build.
 const getRawSettingsMap = cache(async (): Promise<Map<string, string>> => {
-  const rows = await prisma.setting.findMany();
-  return new Map(rows.map((r) => [r.key, r.value]));
+  try {
+    const rows = await prisma.setting.findMany();
+    return new Map(rows.map((r) => [r.key, r.value]));
+  } catch (err) {
+    console.error("Could not load settings from the database, using defaults:", err);
+    return new Map();
+  }
 });
 
 function decryptIfNeeded(key: string, raw: string): string {

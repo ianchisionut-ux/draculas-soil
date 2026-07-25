@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/db";
 import { getSetting } from "@/lib/settings";
 import { getStripeClient } from "@/lib/stripe";
+import { sendOrderConfirmationEmail, sendAdminOrderNotification } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("stripe-signature");
@@ -55,6 +56,18 @@ export async function POST(req: NextRequest) {
             where: { id: item.productId, trackStock: true },
             data: { stock: { decrement: item.quantity } },
           });
+        }
+
+        // Re-fetch with the just-written customer/shipping details for the emails below.
+        const paidOrder = await prisma.order.findUnique({
+          where: { id: orderId },
+          include: { items: true },
+        });
+        if (paidOrder) {
+          await Promise.all([
+            sendOrderConfirmationEmail(paidOrder),
+            sendAdminOrderNotification(paidOrder),
+          ]);
         }
       }
     }

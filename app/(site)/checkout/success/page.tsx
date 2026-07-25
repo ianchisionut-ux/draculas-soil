@@ -6,6 +6,8 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useCart } from "@/components/site/CartContext";
 
+export const dynamic = "force-dynamic";
+
 function SuccessContent() {
   const { clear } = useCart();
   const params = useSearchParams();

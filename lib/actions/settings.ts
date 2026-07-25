@@ -69,6 +69,29 @@ export async function updateStripeSettings(_prev: ActionState, formData: FormDat
   }
 }
 
+export async function updateEmailSettings(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await requireAdminSession();
+
+    const apiKey = String(formData.get("resend_api_key") || "").trim();
+    const emailFrom = String(formData.get("email_from") || "").trim();
+    const enabled = formData.get("order_emails_enabled") === "on";
+
+    const values: Record<string, string> = {
+      email_from: emailFrom,
+      order_emails_enabled: enabled ? "true" : "false",
+    };
+    // Only overwrite the API key if the admin actually typed a new one.
+    if (apiKey) values.resend_api_key = apiKey;
+
+    await setSettings(values);
+    revalidatePath("/admin/settings/email");
+    return { success: "Email settings saved." };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Something went wrong." };
+  }
+}
+
 export async function changeAdminPassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
     const email = await requireAdminSession();
