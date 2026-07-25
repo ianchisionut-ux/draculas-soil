@@ -114,6 +114,7 @@ export async function POST(req: NextRequest) {
           },
         };
       }),
+      billing_address_collection: "required",
       shipping_address_collection: {
         allowed_countries: [
           "US", "CA", "MX", "GB", "IE", "RO", "DE", "FR", "IT", "ES", "PT",
