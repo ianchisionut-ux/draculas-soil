@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useCart } from "@/components/site/CartContext";
 
-export default function CheckoutSuccessPage() {
+function SuccessContent() {
   const { clear } = useCart();
   const params = useSearchParams();
   const orderNumber = params.get("order");
@@ -41,5 +41,13 @@ export default function CheckoutSuccessPage() {
         BACK TO HOME
       </Link>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <SuccessContent />
+    </Suspense>
   );
 }
