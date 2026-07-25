@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
-import { updateOrderStatus } from "@/lib/actions/orders";
+import { updateOrderStatus, deleteOrder } from "@/lib/actions/orders";
+import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending",
@@ -20,10 +21,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!order) notFound();
 
   const boundUpdate = updateOrderStatus.bind(null, order.id);
+  const boundDelete = deleteOrder.bind(null, order.id);
 
   return (
     <div className="max-w-2xl">
-      <h1 className="font-display text-4xl">Order {order.orderNumber}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="font-display text-4xl">Order {order.orderNumber}</h1>
+        <DeleteOrderButton action={boundDelete} />
+      </div>
 
       <div className="mt-6 grid grid-cols-2 gap-6 text-sm">
         <div>

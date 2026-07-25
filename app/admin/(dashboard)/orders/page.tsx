@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
+import { deleteOrder } from "@/lib/actions/orders";
+import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending",
@@ -29,6 +31,7 @@ export default async function AdminOrdersPage() {
                 <th className="p-3 font-normal">Customer</th>
                 <th className="p-3 font-normal">Status</th>
                 <th className="p-3 font-normal">Total</th>
+                <th className="p-3 font-normal" />
               </tr>
             </thead>
             <tbody>
@@ -43,6 +46,9 @@ export default async function AdminOrdersPage() {
                   <td className="p-3">{o.email || "—"}</td>
                   <td className="p-3">{STATUS_LABELS[o.status] || o.status}</td>
                   <td className="p-3">{formatPrice(o.totalCents, o.currency)}</td>
+                  <td className="p-3 text-right">
+                    <DeleteOrderButton action={deleteOrder.bind(null, o.id)} />
+                  </td>
                 </tr>
               ))}
             </tbody>
