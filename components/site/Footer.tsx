@@ -15,7 +15,15 @@ const BADGES = [
   { icon: IconStar, title: "30-day guarantee", desc: "Money back, no questions asked" },
 ];
 
-export function Footer({ siteName, contactEmail }: { siteName: string; contactEmail: string }) {
+export function Footer({
+  siteName,
+  contactEmail,
+  supportPhone,
+}: {
+  siteName: string;
+  contactEmail: string;
+  supportPhone: string;
+}) {
   return (
     <footer id="contact" className="border-t border-line">
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-6 py-12 sm:grid-cols-3 md:grid-cols-5">
@@ -30,12 +38,18 @@ export function Footer({ siteName, contactEmail }: { siteName: string; contactEm
       <div className="hairline mx-6" />
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-stone sm:flex-row">
         <p>© {new Date().getFullYear()} {siteName}. All rights reserved.</p>
-        <div className="flex gap-6">
+        <div className="flex flex-wrap items-center justify-center gap-6">
           {contactEmail && (
             <a href={`mailto:${contactEmail}`} className="hover:text-gold-bright">
               {contactEmail}
             </a>
           )}
+          {supportPhone && (
+            <a href={`tel:${supportPhone.replace(/\s+/g, "")}`} className="hover:text-gold-bright">
+              {supportPhone}
+            </a>
+          )}
+          <Link href="/contact" className="hover:text-gold-bright">Contact</Link>
           <Link href="/terms" className="hover:text-gold-bright">Terms</Link>
           <Link href="/privacy" className="hover:text-gold-bright">Privacy</Link>
         </div>

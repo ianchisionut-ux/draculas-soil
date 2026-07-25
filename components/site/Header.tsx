@@ -12,7 +12,7 @@ const NAV_LINKS = [
   { href: "/#reviews", label: "Reviews" },
   { href: "/#product", label: "Collector Edition" },
   { href: "/#faq", label: "FAQ" },
-  { href: "/#contact", label: "Contact" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export function Header({ siteName }: { siteName: string }) {
