@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useCart } from "./CartContext";
 
@@ -21,8 +22,18 @@ export function Header({ siteName }: { siteName: string }) {
   return (
     <header className="sticky top-0 z-50 border-b border-line/80 bg-void/90 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <Link href="/" className="font-label text-lg tracking-[0.15em] text-bone">
-          {siteName.toUpperCase()}
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/images/logo.png"
+            alt={siteName}
+            width={200}
+            height={50}
+            priority
+            className="hidden h-9 w-auto sm:block"
+          />
+          <span className="font-label text-lg tracking-[0.15em] text-bone sm:hidden">
+            {siteName.toUpperCase()}
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

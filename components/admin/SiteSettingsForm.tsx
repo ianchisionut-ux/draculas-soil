@@ -47,6 +47,22 @@ export function SiteSettingsForm({ settings }: { settings: Record<string, string
       </fieldset>
 
       <fieldset className="space-y-4">
+        <legend className="font-label text-xs tracking-[0.15em] text-gold-bright">
+          STORY SECTION
+        </legend>
+        <Field label="Story heading" name="story_title" defaultValue={settings.story_title} />
+        <div>
+          <label className="block text-sm text-stone">Story text</label>
+          <textarea
+            name="story_text"
+            rows={5}
+            defaultValue={settings.story_text}
+            className="mt-1 w-full border border-line bg-ink px-3 py-2 text-bone outline-none focus:border-gold"
+          />
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-4">
         <legend className="font-label text-xs tracking-[0.15em] text-gold-bright">SEO</legend>
         <Field label="Default title (&lt;title&gt; tag)" name="seo_default_title" defaultValue={settings.seo_default_title} />
         <div>

@@ -61,7 +61,7 @@ const EXPLORE_CARDS = [
 
 export default async function HomePage() {
   const [settings, featuredProduct] = await Promise.all([
-    getSettings(["site_tagline"]),
+    getSettings(["site_tagline", "story_title", "story_text"]),
     prisma.product.findFirst({
       where: { isActive: true },
       orderBy: { createdAt: "asc" },
@@ -189,15 +189,8 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-7xl gap-10 px-6 py-20 md:grid-cols-2 md:items-center">
           <div>
             <p className="text-eyebrow mb-3 text-gold">THE STORY</p>
-            <h2 className="font-display text-4xl">
-              The legend of the world&apos;s most famous vampire
-            </h2>
-            <p className="mt-4 max-w-md text-stone">
-              At the foot of the Carpathians, where fog gathers over centuries-old walls, lies
-              the soil that inspired the legend of Dracula. Every jar is hand-collected near
-              Bran Castle and carefully packaged for collectors, folklore enthusiasts, and
-              lovers of Transylvanian mystery alike.
-            </p>
+            <h2 className="font-display text-4xl">{settings.story_title}</h2>
+            <p className="mt-4 max-w-md text-stone">{settings.story_text}</p>
           </div>
           <div className="relative h-80 overflow-hidden rounded-sm border border-line bg-ink sm:h-96">
             <Image

@@ -34,6 +34,8 @@ export async function updateSiteSettings(_prev: ActionState, formData: FormData)
       seo_default_description: String(formData.get("seo_default_description") || ""),
       og_image_url: String(formData.get("og_image_url") || ""),
       google_site_verification: String(formData.get("google_site_verification") || ""),
+      story_title: String(formData.get("story_title") || ""),
+      story_text: String(formData.get("story_text") || ""),
     });
 
     revalidatePath("/admin/settings");

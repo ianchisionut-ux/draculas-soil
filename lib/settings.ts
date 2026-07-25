@@ -26,6 +26,9 @@ export const SETTING_DEFAULTS = {
     "Authentic soil collected near Bran Castle, Transylvania, Romania. Certificate of authenticity included. Free worldwide shipping.",
   og_image_url: "",
   google_site_verification: "",
+  story_title: "The legend of the world's most famous vampire",
+  story_text:
+    "At the foot of the Carpathians, where fog gathers over centuries-old walls, lies the soil that inspired the legend of Dracula. Every jar is hand-collected near Bran Castle and carefully packaged for collectors, folklore enthusiasts, and lovers of Transylvanian mystery alike.",
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
