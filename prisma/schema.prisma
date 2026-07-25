@@ -1,0 +1,122 @@
+// Prisma schema for Dracula's Soil e-commerce site
+// Database: SQLite (local dev + Turso for production via libSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Single admin account. Only one row will ever exist in normal use,
+// but the model supports more if ever needed.
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Generic key-value settings store, editable entirely from /admin/settings.
+// Used for: Stripe keys, site info, shipping options, SEO defaults, etc.
+// Sensitive values (Stripe secret key, webhook secret) are stored encrypted
+// (see lib/crypto.ts) — never returned to the client in plaintext.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id            String       @id @default(cuid())
+  slug          String       @unique
+  name          String
+  shortDesc     String
+  description   String // long description / HTML or markdown
+  priceCents    Int // store price in cents to avoid float issues
+  currency      String       @default("usd")
+  compareAtCents Int? // optional "was" price, for showing a discount
+  sku           String?      @unique
+  stock         Int          @default(0)
+  trackStock    Boolean      @default(true)
+  isActive      Boolean      @default(true)
+  isFeatured    Boolean      @default(false)
+  images        ProductImage[]
+  metaTitle     String?
+  metaDesc      String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  orderItems    OrderItem[]
+
+  @@index([isActive])
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  alt       String  @default("")
+  position  Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  @@index([productId])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+model Order {
+  id                  String      @id @default(cuid())
+  orderNumber         String      @unique // human friendly, e.g. DS-100234
+  status              OrderStatus @default(PENDING)
+  email               String
+  customerName        String
+  shippingAddress1    String
+  shippingAddress2    String?
+  shippingCity        String
+  shippingState       String?
+  shippingPostalCode  String
+  shippingCountry     String
+  subtotalCents       Int
+  shippingCents       Int         @default(0)
+  totalCents          Int
+  currency            String      @default("usd")
+  stripeSessionId     String?     @unique
+  stripePaymentIntent String?
+  items               OrderItem[]
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@index([status])
+  @@index([email])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String
+  product     Product @relation(fields: [productId], references: [id])
+  productId   String
+  nameSnapshot String // product name at time of purchase
+  priceCents  Int     // unit price at time of purchase
+  quantity    Int
+
+  @@index([orderId])
+}
+
+// Captures leads from a "notify me" / contact form if you want one later.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+}

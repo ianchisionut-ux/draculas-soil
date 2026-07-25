@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  /* --- Color tokens --- */
+  --color-void: #0b0908;        /* near-black background */
+  --color-ink: #14100e;         /* elevated surface (cards) */
+  --color-bone: #ece6da;        /* primary text on dark */
+  --color-stone: #948d80;       /* secondary / muted text */
+  --color-blood: #8a1220;       /* primary red accent */
+  --color-blood-deep: #4a0a10;  /* wax seal shadow */
+  --color-blood-bright: #c81f30;/* hover / bright red */
+  --color-gold: #b3924f;        /* gold accent */
+  --color-gold-bright: #d9bb78; /* bright gold for emphasis */
+  --color-line: #2a2420;        /* hairline dividers */
+
+  --background: var(--color-void);
+  --foreground: var(--color-bone);
+}
+
+@theme inline {
+  --color-void: var(--color-void);
+  --color-ink: var(--color-ink);
+  --color-bone: var(--color-bone);
+  --color-stone: var(--color-stone);
+  --color-blood: var(--color-blood);
+  --color-blood-deep: var(--color-blood-deep);
+  --color-blood-bright: var(--color-blood-bright);
+  --color-gold: var(--color-gold);
+  --color-gold-bright: var(--color-gold-bright);
+  --color-line: var(--color-line);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-display: var(--font-cormorant);
+  --font-label: var(--font-cinzel);
+  --font-body: var(--font-garamond);
+}
+
+* {
+  border-color: var(--color-line);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), Georgia, serif;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold-bright);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.fog-layer {
+  background-image:
+    radial-gradient(ellipse 60% 40% at 20% 100%, rgba(138, 18, 32, 0.10), transparent 60%),
+    radial-gradient(ellipse 50% 30% at 85% 10%, rgba(179, 146, 79, 0.08), transparent 60%);
+}
+
+.hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-line), transparent);
+}
+
+.text-eyebrow {
+  font-family: var(--font-label);
+  letter-spacing: 0.2em;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
