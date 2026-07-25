@@ -5,7 +5,16 @@ import {
   IconGlobe,
   IconCard,
   IconStar,
+  IconFacebook,
+  IconInstagram,
+  IconX,
 } from "@/components/icons/Icons";
+
+const SOCIAL_LINKS = [
+  { icon: IconFacebook, href: "https://www.facebook.com/draculasoil", label: "Facebook" },
+  { icon: IconInstagram, href: "https://www.instagram.com/draculasoil/", label: "Instagram" },
+  { icon: IconX, href: "https://twitter.com/draculasoil/", label: "X (Twitter)" },
+];
 
 const BADGES = [
   { icon: IconShieldCheck, title: "Authentic Romanian product", desc: "Hand-collected near Bran Castle" },
@@ -33,6 +42,21 @@ export function Footer({
             <p className="font-label text-[11px] tracking-[0.1em] text-gold-bright">{b.title}</p>
             <p className="text-sm text-stone">{b.desc}</p>
           </div>
+        ))}
+      </div>
+      <div className="hairline mx-6" />
+      <div className="mx-auto flex max-w-7xl justify-center gap-5 px-6 py-6">
+        {SOCIAL_LINKS.map((s) => (
+          <a
+            key={s.label}
+            href={s.href}
+            target="_blank"
+            rel="noreferrer noopener"
+            aria-label={s.label}
+            className="text-stone transition-colors hover:text-gold-bright"
+          >
+            <s.icon className="h-5 w-5" />
+          </a>
         ))}
       </div>
       <div className="hairline mx-6" />
