@@ -30,21 +30,40 @@ export async function POST(req: NextRequest) {
     if (orderId) {
       const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
       if (order && order.status === "PENDING") {
-        const details = session.customer_details;
-        const address = details?.address;
+        const details = session.customer_details; // billing/contact info
+        const billingAddress = details?.address;
+
+        // Shipping details live in different places depending on the Stripe
+        // API version (Stripe restructured this in 2025). Try every known
+        // location, falling back to the billing address as a last resort
+        // rather than leaving the order with no address at all.
+        const sessionWithShipping = session as unknown as {
+          collected_information?: {
+            shipping_details?: { name?: string | null; address?: Stripe.Address | null };
+          };
+          shipping_details?: { name?: string | null; address?: Stripe.Address | null };
+        };
+
+        const shippingInfo =
+          sessionWithShipping.collected_information?.shipping_details ??
+          sessionWithShipping.shipping_details ??
+          null;
+
+        const shippingAddress = shippingInfo?.address ?? billingAddress;
+        const shippingName = shippingInfo?.name ?? details?.name;
 
         await prisma.order.update({
           where: { id: orderId },
           data: {
             status: "PAID",
             email: details?.email || order.email,
-            customerName: details?.name || order.customerName,
-            shippingAddress1: address?.line1 || "",
-            shippingAddress2: address?.line2 || undefined,
-            shippingCity: address?.city || "",
-            shippingState: address?.state || undefined,
-            shippingPostalCode: address?.postal_code || "",
-            shippingCountry: address?.country || "",
+            customerName: shippingName || order.customerName,
+            shippingAddress1: shippingAddress?.line1 || "",
+            shippingAddress2: shippingAddress?.line2 || undefined,
+            shippingCity: shippingAddress?.city || "",
+            shippingState: shippingAddress?.state || undefined,
+            shippingPostalCode: shippingAddress?.postal_code || "",
+            shippingCountry: shippingAddress?.country || "",
             stripePaymentIntent:
               typeof session.payment_intent === "string" ? session.payment_intent : undefined,
           },
