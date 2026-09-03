@@ -4,7 +4,9 @@ import { PrismaClient } from '@prisma/client';
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
-const adapter = new PrismaNeon(pool);
 
-// Cast adapter to any to bypass the type definition mismatch
+// Forțăm TypeScript să accepte pool-ul
+const adapter = new PrismaNeon(pool as any);
+
+// Forțăm TypeScript să accepte adaptorul
 export const prisma = new PrismaClient({ adapter: adapter as any });
