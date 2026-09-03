@@ -1,12 +1,16 @@
-import { Pool } from '@neondatabase/serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import { PrismaNeon } from '@prisma/adapter-neon';
 import { PrismaClient } from '@prisma/client';
+import ws from 'ws';
+
+neonConfig.webSocketConstructor = ws;
 
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
 
-// Forțăm TypeScript să accepte pool-ul
-const adapter = new PrismaNeon(pool as any);
+// Ignorăm ambele erori de TypeScript cu @ts-expect-error
+// @ts-expect-error
+const adapter = new PrismaNeon(pool);
 
-// Forțăm TypeScript să accepte adaptorul
-export const prisma = new PrismaClient({ adapter: adapter as any });
+// @ts-expect-error
+export const prisma = new PrismaClient({ adapter });
