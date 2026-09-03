@@ -12,16 +12,64 @@ const STATUS_LABELS: Record<string, string> = {
   REFUNDED: "Refunded",
 };
 
-export default async function AdminOrdersPage() {
-  const orders = await prisma.order.findMany({ orderBy: { createdAt: "desc" } });
+const FILTERS = [
+  { key: "paid", label: "Paid & fulfilled" },
+  { key: "pending", label: "Pending (unpaid)" },
+  { key: "all", label: "All" },
+] as const;
+
+type FilterKey = (typeof FILTERS)[number]["key"];
+
+function whereForFilter(filter: FilterKey) {
+  if (filter === "pending") return { status: "PENDING" as const };
+  if (filter === "all") return {};
+  // "paid" (default): everything except abandoned/never-paid checkouts
+  return { status: { not: "PENDING" as const } };
+}
+
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>;
+}) {
+  const { filter: rawFilter } = await searchParams;
+  const filter: FilterKey = FILTERS.some((f) => f.key === rawFilter) ? (rawFilter as FilterKey) : "paid";
+
+  const orders = await prisma.order.findMany({
+    where: whereForFilter(filter),
+    orderBy: { createdAt: "desc" },
+  });
 
   return (
     <div>
       <h1 className="font-display text-4xl">Orders</h1>
+      <p className="mt-2 text-sm text-stone">
+        Showing only orders that were actually paid, by default — abandoned checkouts (started
+        but never paid) are hidden so you always know exactly what to ship.
+      </p>
 
-      <div className="mt-8 border border-line">
+      <div className="mt-6 flex gap-2">
+        {FILTERS.map((f) => (
+          <Link
+            key={f.key}
+            href={`/admin/orders?filter=${f.key}`}
+            className={`border px-4 py-1.5 font-label text-xs tracking-[0.1em] ${
+              filter === f.key
+                ? "border-gold bg-ink text-gold-bright"
+                : "border-line text-stone hover:text-bone"
+            }`}
+          >
+            {f.label.toUpperCase()}
+          </Link>
+        ))}
+      </div>
+
+      <div className="mt-6 border border-line">
         {orders.length === 0 ? (
-          <p className="p-6 text-sm text-stone">No orders yet.</p>
+          <p className="p-6 text-sm text-stone">
+            {filter === "pending" ? "No abandoned checkouts. " : "No orders yet. "}
+            Nothing to show here.
+          </p>
         ) : (
           <table className="w-full text-left text-sm">
             <thead>

@@ -6,9 +6,13 @@ import { isStripeConfigured } from "@/lib/settings";
 export default async function AdminHomePage() {
   const [productCount, orderCount, paidOrders, recentOrders, stripeReady] = await Promise.all([
     prisma.product.count(),
-    prisma.order.count(),
+    prisma.order.count({ where: { status: { not: "PENDING" } } }),
     prisma.order.findMany({ where: { status: "PAID" } }),
-    prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
+    prisma.order.findMany({
+      where: { status: { not: "PENDING" } },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
     isStripeConfigured(),
   ]);
 
@@ -16,7 +20,7 @@ export default async function AdminHomePage() {
 
   const stats = [
     { label: "Active products", value: productCount },
-    { label: "Total orders", value: orderCount },
+    { label: "Orders", value: orderCount },
     { label: "Total revenue", value: formatPrice(revenueCents) },
   ];
 
@@ -53,7 +57,7 @@ export default async function AdminHomePage() {
         </div>
         <div className="mt-4 border border-line">
           {recentOrders.length === 0 ? (
-            <p className="p-6 text-sm text-stone">No orders yet.</p>
+            <p className="p-6 text-sm text-stone">No paid orders yet.</p>
           ) : (
             <table className="w-full text-left text-sm">
               <thead>
