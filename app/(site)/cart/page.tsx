@@ -22,9 +22,9 @@ export default function CartPage() {
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string; url?: string };
       if (!res.ok) throw new Error(data.error || "Something went wrong.");
-      window.location.href = data.url;
+      window.location.href = data.url as string;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setLoading(false);

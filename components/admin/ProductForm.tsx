@@ -34,9 +34,9 @@ export function ProductForm({ action, initial, submitLabel, onDelete }: Props) {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const data = await res.json();
+      const data = (await res.json()) as { error?: string; url?: string };
       if (!res.ok) throw new Error(data.error || "Upload failed.");
-      setImageUrl(data.url);
+      setImageUrl(data.url as string);
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
