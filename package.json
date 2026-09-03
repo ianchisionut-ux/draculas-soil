@@ -16,6 +16,8 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@prisma/adapter-neon": "^7.10.0",
     "@prisma/client": "^5.22.0",
     "@stripe/stripe-js": "^9.12.0",
     "@vercel/blob": "^2.6.1",
@@ -28,6 +30,7 @@
     "resend": "^6.18.0",
     "sharp": "^0.35.3",
     "stripe": "^22.3.2",
+    "ws": "^8.21.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -36,6 +39,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.18.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
     "tailwindcss": "^4",

@@ -1,14 +1,12 @@
-import { PrismaClient } from "@prisma/client";
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { PrismaNeon } from '@prisma/adapter-neon';
+import { PrismaClient } from '@prisma/client';
+import ws from 'ws';
 
-// Prevents creating a new Prisma Client on every hot-reload in dev
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+neonConfig.webSocketConstructor = ws;
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
-  });
+const connectionString = `${process.env.DATABASE_URL}`;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaNeon(pool);
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma = new PrismaClient({ adapter });
