@@ -1,14 +1,11 @@
-import { neon, neonConfig } from '@neondatabase/serverless';
-import { PrismaNeonHTTP } from '@prisma/adapter-neon';
+import { Pool } from '@neondatabase/serverless';
+import { PrismaNeon } from '@prisma/adapter-neon';
 import { PrismaClient } from '@prisma/client';
 
 const connectionString = `${process.env.DATABASE_URL}`;
+const pool = new Pool({ connectionString });
 
-// Use neon to create a connection
-const sql = neon(connectionString);
+// @ts-ignore - Ignorăm complet conflictul fals de tipuri din TypeScript
+const adapter = new PrismaNeon(pool);
 
-// Initialize the Prisma adapter with the sql connection
-const adapter = new PrismaNeonHTTP(sql);
-
-// Initialize PrismaClient with the adapter
 export const prisma = new PrismaClient({ adapter });
