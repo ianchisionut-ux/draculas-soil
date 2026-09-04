@@ -4,10 +4,15 @@
 // Workers ("[unenv] fs.readdir is not implemented yet!"). It runs as plain
 // JS and works on both Workers and Node.js.
 import { PrismaClient } from '@/lib/generated/prisma/client';
-// PrismaNeonHttp issues each query as its own independent fetch() call
-// (no persistent socket), unlike PrismaNeon's WebSocket/Pool adapter. That
-// matters for the fix below: see the comment on `getClient`.
-import { PrismaNeonHttp } from '@prisma/adapter-neon';
+// PrismaNeon (WebSocket/Pool-based), not PrismaNeonHttp — nested writes
+// like `prisma.order.create({ data: { items: { create: [...] } } })` (used
+// at checkout, and for products with images in the admin) run as an
+// implicit multi-statement transaction under the hood, and Neon's HTTP
+// adapter flatly can't do that: "Transactions are not supported in HTTP
+// mode". The WebSocket adapter can. See the comment on `getClient` below
+// for why a *fresh* Pool per request (not a shared one) is what makes this
+// safe on Workers.
+import { PrismaNeon } from '@prisma/adapter-neon';
 import { cache } from 'react';
 
 /**
@@ -20,22 +25,27 @@ import { cache } from 'react';
  *
  *   Error: Cannot perform I/O on behalf of a different request.
  *
- * This happened even after switching to the HTTP-based Neon adapter, which
- * confirmed it's not specifically about the WebSocket transport — Prisma's
- * own guidance for Cloudflare Workers is that the client must be created
- * fresh per request, never cached globally.
+ * We first tried fixing that by switching to Neon's HTTP adapter (stateless
+ * fetch() per query, no persistent socket) — that avoided the I/O error,
+ * but broke nested writes ("Transactions are not supported in HTTP mode"),
+ * since Neon's HTTP driver can't run multi-statement transactions at all.
+ *
+ * The actual fix, per Prisma's own Cloudflare Workers guidance: keep the
+ * WebSocket adapter (so transactions work), but never share a client (or
+ * its underlying Pool/socket) across requests — build one fresh per
+ * request instead.
  *
  * `cache()` from React gives us that "fresh per request" scoping without
  * having to touch every one of the ~17 files that import `prisma` below:
  * within one request's server render / route handler / server action, all
- * calls to `getClient()` return the same memoized instance (so we're not
- * wastefully reconnecting many times per request); a new request gets a
- * new instance. This is the same primitive already used in lib/settings.ts
- * for the same reason.
+ * calls to `getClient()` return the same memoized instance (so we open one
+ * Pool per request, not one per query); a new request gets a new instance,
+ * so its socket is never touched by any other request. This is the same
+ * primitive already used in lib/settings.ts for the same reason.
  */
 const getClient = cache(() => {
   const connectionString = `${process.env.DATABASE_URL}`;
-  const adapter = new PrismaNeonHttp(connectionString, {});
+  const adapter = new PrismaNeon({ connectionString });
   return new PrismaClient({ adapter });
 });
 
