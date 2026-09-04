@@ -1,7 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+// Reuse the same adapter-backed client as the app (lib/db.ts) instead of
+// instantiating a bare `new PrismaClient()` here — Prisma 7's generated
+// client needs a driver adapter to actually connect to the database.
+import { prisma } from "../lib/db";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
 
 async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL;

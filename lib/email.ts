@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import { getSettings } from "./settings";
 import { formatPrice } from "./format";
-import type { Order, OrderItem } from "@prisma/client";
+import type { Order, OrderItem } from "@/lib/generated/prisma";
 
 type OrderWithItems = Order & { items: OrderItem[] };
 

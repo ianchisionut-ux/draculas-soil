@@ -1,14 +1,20 @@
 // Prisma schema for Dracula's Soil e-commerce site
 // Database: SQLite (local dev + Turso for production via libSQL)
 
+// Prisma 7's rewritten client generator ("prisma-client"), unlike the old
+// "prisma-client-js" one, doesn't need a native/binary query engine loaded
+// from disk at runtime — that's what made every query on Cloudflare Workers
+// crash with "[unenv] fs.readdir is not implemented yet!" (Workers has no
+// filesystem). This generator, combined with the Neon driver adapter, runs
+// entirely in JS and works on Workers. See prisma.config.ts for the
+// datasource URL (Prisma 7 moved it out of this file).
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // Single admin account. Only one row will ever exist in normal use,
