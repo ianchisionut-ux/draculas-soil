@@ -4,7 +4,7 @@ import { PrismaNeon } from '@prisma/adapter-neon';
 // load from disk, which is what made every query crash on Cloudflare
 // Workers ("[unenv] fs.readdir is not implemented yet!"). It runs as plain
 // JS and works on both Workers and Node.js.
-import { PrismaClient } from '@/lib/generated/prisma';
+import { PrismaClient } from '@/lib/generated/prisma/client';
 
 // Prisma 7's PrismaNeon adapter takes the connection string directly and
 // manages its own connection internally — no need to construct a
