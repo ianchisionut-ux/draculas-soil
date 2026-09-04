@@ -4,21 +4,55 @@
 // Workers ("[unenv] fs.readdir is not implemented yet!"). It runs as plain
 // JS and works on both Workers and Node.js.
 import { PrismaClient } from '@/lib/generated/prisma/client';
-// IMPORTANT: PrismaNeonHttp, not PrismaNeon. `prisma` below is a module-level
-// singleton, reused across every request the Worker handles. PrismaNeon
-// (the WebSocket/Pool-based adapter) opens one persistent socket the first
-// time it's used and keeps reusing it — but Cloudflare Workers ties I/O
-// objects to the request that created them, so the *next* request to reuse
-// that socket crashes with "Cannot perform I/O on behalf of a different
-// request" / "Connection terminated". PrismaNeonHttp issues each query as
-// its own independent fetch() call instead, with no connection held open
-// between requests, which is safe for a singleton client on Workers. This
-// project doesn't use interactive prisma.$transaction(), so the one
-// capability the HTTP driver can't do (multi-step interactive transactions)
-// isn't needed here.
+// PrismaNeonHttp issues each query as its own independent fetch() call
+// (no persistent socket), unlike PrismaNeon's WebSocket/Pool adapter. That
+// matters for the fix below: see the comment on `getClient`.
 import { PrismaNeonHttp } from '@prisma/adapter-neon';
+import { cache } from 'react';
 
-const connectionString = `${process.env.DATABASE_URL}`;
-const adapter = new PrismaNeonHttp(connectionString, {});
+/**
+ * Cloudflare Workers ties every I/O object (sockets, streams, and — we
+ * learned the hard way — apparently some of what a Prisma driver adapter
+ * holds internally too) to the specific request that created it. A
+ * `PrismaClient` built once at module scope and reused across every request
+ * (the normal, encouraged pattern on a long-running Node.js server) throws
+ * on the *second* request to touch it here:
+ *
+ *   Error: Cannot perform I/O on behalf of a different request.
+ *
+ * This happened even after switching to the HTTP-based Neon adapter, which
+ * confirmed it's not specifically about the WebSocket transport — Prisma's
+ * own guidance for Cloudflare Workers is that the client must be created
+ * fresh per request, never cached globally.
+ *
+ * `cache()` from React gives us that "fresh per request" scoping without
+ * having to touch every one of the ~17 files that import `prisma` below:
+ * within one request's server render / route handler / server action, all
+ * calls to `getClient()` return the same memoized instance (so we're not
+ * wastefully reconnecting many times per request); a new request gets a
+ * new instance. This is the same primitive already used in lib/settings.ts
+ * for the same reason.
+ */
+const getClient = cache(() => {
+  const connectionString = `${process.env.DATABASE_URL}`;
+  const adapter = new PrismaNeonHttp(connectionString, {});
+  return new PrismaClient({ adapter });
+});
 
-export const prisma = new PrismaClient({ adapter });
+// A thin proxy so every existing call site (`import { prisma } from
+// "@/lib/db"`, then `prisma.product.findMany()` etc.) keeps working
+// unchanged — each property access resolves to the current request's
+// client via getClient() above, instead of one client shared forever.
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    const client = getClient();
+    const value = Reflect.get(client as object, prop, receiver);
+    // Top-level methods like `prisma.$disconnect()` are called as
+    // `(this proxy).$disconnect()`, which would bind `this` to the proxy
+    // itself rather than the real client — Prisma's internals need `this`
+    // to be the actual instance. Model delegates (`prisma.setting`) are
+    // plain objects, not functions, so they pass through untouched and
+    // their own methods (`.findMany()` etc.) bind correctly on their own.
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+}) as PrismaClient;
