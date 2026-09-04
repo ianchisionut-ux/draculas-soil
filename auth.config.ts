@@ -8,6 +8,11 @@ import type { NextAuthConfig } from "next-auth";
  * server components).
  */
 export const authConfig: NextAuthConfig = {
+  // On Vercel, NextAuth auto-trusts the host because it detects the VERCEL
+  // env var. Cloudflare Workers has no equivalent signal, so without this
+  // NextAuth refuses the request as an "untrusted host" and shows a
+  // generic "There is a problem with the server configuration" error.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/admin/login",

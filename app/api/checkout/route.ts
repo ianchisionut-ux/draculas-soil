@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     });
 
     const stripe = await getStripeClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
+    const siteUrl = process.env.SITE_URL || req.nextUrl.origin;
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",

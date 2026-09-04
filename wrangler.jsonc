@@ -1,35 +1,39 @@
+﻿@'
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "draculas-soil",
-  "main": ".open-next/worker.js",
-  "compatibility_date": "2025-09-01",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-
-  // Static assets produced by the OpenNext build (JS/CSS chunks, images, etc.)
-  "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
-  },
-
-  // Lets the worker call itself for internal routes (required by OpenNext).
-  "services": [
-    { "binding": "WORKER_SELF_REFERENCE", "service": "draculas-soil" }
-  ],
-
-  // Two R2 buckets:
-  //  - NEXT_INC_CACHE_R2_BUCKET: OpenNext's ISR/data cache (opaque, managed by the adapter)
-  //  - PRODUCT_IMAGES: where uploaded product photos live (replaces Vercel Blob)
-  // Create both with:
-  //   npx wrangler r2 bucket create draculas-soil-cache
-  //   npx wrangler r2 bucket create draculas-soil-images
-  "r2_buckets": [
-    { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "draculas-soil-cache" },
-    { "binding": "PRODUCT_IMAGES", "bucket_name": "draculas-soil-images" }
-  ],
-
-  // Cloudflare Images binding — used to resize/convert uploads to webp
-  // instead of `sharp` (which can't run on the Workers runtime).
-  "images": {
-    "binding": "IMAGES"
-  }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "draculas-soil",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2025-09-01",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "draculas-soil"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "NEXT_INC_CACHE_R2_BUCKET",
+			"bucket_name": "draculas-soil-cache"
+		},
+		{
+			"binding": "PRODUCT_IMAGES",
+			"bucket_name": "draculas-soil-images"
+		}
+	],
+	"images": {
+		"binding": "IMAGES"
+	},
+	"vars": {
+		"SITE_URL": "https://draculasoil.com",
+		"R2_PUBLIC_URL": "https://pub-f1cc3576e6ed47a79e95137a90a5747c.r2.dev"
+	}
 }
+'@ | Set-Content -Encoding utf8 wrangler.jsonc

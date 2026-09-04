@@ -38,9 +38,7 @@ folosești acel domeniu în loc de `.r2.dev`.
 
 ## 3. Variabile de mediu
 
-Cele publice (client-side) merg în `wrangler.jsonc` sub `vars`, cele
-secrete (server-side) prin `wrangler secret put`. Astea sunt toate cele
-folosite de aplicație (deduse din cod):
+Secretele (server-side, sensibile) merg prin `wrangler secret put`:
 
 ```bash
 npx wrangler secret put DATABASE_URL          # connection string Neon (pooled)
@@ -48,16 +46,28 @@ npx wrangler secret put AUTH_SECRET            # npx auth secret
 npx wrangler secret put APP_ENCRYPTION_KEY     # node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-Și în `wrangler.jsonc`, adaugă:
+Variabilele necriptate (`SITE_URL`, `R2_PUBLIC_URL`) merg în `wrangler.jsonc`
+sub `vars` — **deliberat fără prefixul `NEXT_PUBLIC_`**, deși pare o
+variabilă "publică". Motivul: un prefix `NEXT_PUBLIC_` face ca Next.js să
+înghețe valoarea direct în cod, la build — iar build-ul pentru acest adaptor
+rulează local pe mașina ta, nu pe Cloudflare, deci ar îngheța ca `undefined`
+dacă nu e și în `.env`-ul local. Fără prefix, valoarea se citește live din
+Cloudflare la fiecare request, exact ce vrem (niciuna din ele nu e folosită
+vreodată într-o componentă client, deci nu au nevoie de prefix oricum).
 
 ```jsonc
 "vars": {
-  "NEXT_PUBLIC_SITE_URL": "https://draculassoil.com",
-  "NEXT_PUBLIC_R2_DEV_URL": "https://pub-xxxxxxxx.r2.dev"
+  "SITE_URL": "https://draculasoil.com",
+  "R2_PUBLIC_URL": "https://pub-xxxxxxxx.r2.dev"
   // sau, dacă ai atașat un domeniu propriu bucket-ului de imagini:
-  // "NEXT_PUBLIC_R2_CUSTOM_DOMAIN": "img.draculassoil.com"
+  // "R2_CUSTOM_DOMAIN": "img.draculasoil.com"
 }
 ```
+
+**Pune aceleași două valori și în `.env`-ul local** (`SITE_URL=...` și
+`R2_PUBLIC_URL=...`) — unele pagini (homepage, sitemap, robots.txt) sunt
+generate static la build, deci au nevoie de valoarea corectă disponibilă
+local, în plus față de `wrangler.jsonc`.
 
 Cheile Stripe și Resend **nu** sunt necesare aici — rămân exact cum erau,
 editabile din `/admin/settings/stripe` (sunt salvate criptat în baza de

@@ -53,12 +53,12 @@ export async function POST(req: NextRequest) {
         httpMetadata: { contentType: "image/webp" },
       });
       const publicBase =
-        process.env.NEXT_PUBLIC_R2_CUSTOM_DOMAIN
-          ? `https://${process.env.NEXT_PUBLIC_R2_CUSTOM_DOMAIN}`
-          : process.env.NEXT_PUBLIC_R2_DEV_URL; // e.g. https://pub-xxxx.r2.dev
+        process.env.R2_CUSTOM_DOMAIN
+          ? `https://${process.env.R2_CUSTOM_DOMAIN}`
+          : process.env.R2_PUBLIC_URL; // e.g. https://pub-xxxx.r2.dev
       if (!publicBase) {
         throw new Error(
-          "Set NEXT_PUBLIC_R2_CUSTOM_DOMAIN or NEXT_PUBLIC_R2_DEV_URL so uploaded images have a public URL."
+          "Set R2_CUSTOM_DOMAIN or R2_PUBLIC_URL so uploaded images have a public URL."
         );
       }
       return NextResponse.json({ url: `${publicBase}/products/${filename}` });

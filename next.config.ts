@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
       // photos (either the *.r2.dev dev domain, or a custom domain you
       // attach to the bucket — see CLOUDFLARE_DEPLOY.md).
       { protocol: "https", hostname: "*.r2.dev" },
-      { protocol: "https", hostname: process.env.NEXT_PUBLIC_R2_CUSTOM_DOMAIN || "images.invalid" },
+      { protocol: "https", hostname: process.env.R2_CUSTOM_DOMAIN || "images.invalid" },
     ],
   },
 };

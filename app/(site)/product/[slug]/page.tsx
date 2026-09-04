@@ -36,7 +36,7 @@ export default async function ProductPage({ params }: Params) {
   if (!product) notFound();
 
   const inStock = !product.trackStock || product.stock > 0;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+  const siteUrl = process.env.SITE_URL || "https://example.com";
 
   const jsonLd = {
     "@context": "https://schema.org",

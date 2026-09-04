@@ -1,0 +1,236 @@
+From f5a14067d341667b0339d1a16963a47ea2d3efc0 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 4 Sep 2026 05:11:56 +0000
+Subject: [PATCH] Fix broken env vars: drop NEXT_PUBLIC_ prefix on server-only
+ values
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+SITE_URL and the R2 public URL are only ever read in server code (no
+client component touches them), but they were prefixed NEXT_PUBLIC_,
+which makes Next.js statically inline the value into the build output
+at compile time. Since the OpenNext/Cloudflare build runs locally (not
+on Cloudflare's own build servers, unlike Vercel), and the local .env
+never had these values, they got baked in as undefined — breaking
+image uploads (the "Set R2_CUSTOM_DOMAIN or R2_PUBLIC_URL..." 500) and
+silently wrong SEO/metadata URLs.
+
+Renamed NEXT_PUBLIC_SITE_URL -> SITE_URL, NEXT_PUBLIC_R2_DEV_URL ->
+R2_PUBLIC_URL, NEXT_PUBLIC_R2_CUSTOM_DOMAIN -> R2_CUSTOM_DOMAIN
+everywhere they're read, and updated wrangler.jsonc + CLOUDFLARE_DEPLOY.md
+accordingly. Without the NEXT_PUBLIC_ prefix these are read live from
+the Workers runtime env at request time instead of being frozen at
+build time.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PmGzXu2VBxGGDAmDZYhgdT
+---
+ CLOUDFLARE_DEPLOY.md                          | 24 +++++++++++++------
+ app/(site)/product/[slug]/page.tsx            |  2 +-
+ .../(dashboard)/settings/stripe/page.tsx      |  2 +-
+ app/api/admin/upload/route.ts                 |  8 +++----
+ app/api/checkout/route.ts                     |  2 +-
+ app/layout.tsx                                |  4 ++--
+ app/robots.ts                                 |  2 +-
+ app/sitemap.ts                                |  2 +-
+ next.config.ts                                |  2 +-
+ wrangler.jsonc                                | 13 ++++++++++
+ 10 files changed, 42 insertions(+), 19 deletions(-)
+
+diff --git a/CLOUDFLARE_DEPLOY.md b/CLOUDFLARE_DEPLOY.md
+index bd584d9..4412526 100644
+--- a/CLOUDFLARE_DEPLOY.md
++++ b/CLOUDFLARE_DEPLOY.md
+@@ -38,9 +38,7 @@ folosești acel domeniu în loc de `.r2.dev`.
+ 
+ ## 3. Variabile de mediu
+ 
+-Cele publice (client-side) merg în `wrangler.jsonc` sub `vars`, cele
+-secrete (server-side) prin `wrangler secret put`. Astea sunt toate cele
+-folosite de aplicație (deduse din cod):
++Secretele (server-side, sensibile) merg prin `wrangler secret put`:
+ 
+ ```bash
+ npx wrangler secret put DATABASE_URL          # connection string Neon (pooled)
+@@ -48,17 +46,29 @@ npx wrangler secret put AUTH_SECRET            # npx auth secret
+ npx wrangler secret put APP_ENCRYPTION_KEY     # node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+ ```
+ 
+-Și în `wrangler.jsonc`, adaugă:
++Variabilele necriptate (`SITE_URL`, `R2_PUBLIC_URL`) merg în `wrangler.jsonc`
++sub `vars` — **deliberat fără prefixul `NEXT_PUBLIC_`**, deși pare o
++variabilă "publică". Motivul: un prefix `NEXT_PUBLIC_` face ca Next.js să
++înghețe valoarea direct în cod, la build — iar build-ul pentru acest adaptor
++rulează local pe mașina ta, nu pe Cloudflare, deci ar îngheța ca `undefined`
++dacă nu e și în `.env`-ul local. Fără prefix, valoarea se citește live din
++Cloudflare la fiecare request, exact ce vrem (niciuna din ele nu e folosită
++vreodată într-o componentă client, deci nu au nevoie de prefix oricum).
+ 
+ ```jsonc
+ "vars": {
+-  "NEXT_PUBLIC_SITE_URL": "https://draculassoil.com",
+-  "NEXT_PUBLIC_R2_DEV_URL": "https://pub-xxxxxxxx.r2.dev"
++  "SITE_URL": "https://draculasoil.com",
++  "R2_PUBLIC_URL": "https://pub-xxxxxxxx.r2.dev"
+   // sau, dacă ai atașat un domeniu propriu bucket-ului de imagini:
+-  // "NEXT_PUBLIC_R2_CUSTOM_DOMAIN": "img.draculassoil.com"
++  // "R2_CUSTOM_DOMAIN": "img.draculasoil.com"
+ }
+ ```
+ 
++**Pune aceleași două valori și în `.env`-ul local** (`SITE_URL=...` și
++`R2_PUBLIC_URL=...`) — unele pagini (homepage, sitemap, robots.txt) sunt
++generate static la build, deci au nevoie de valoarea corectă disponibilă
++local, în plus față de `wrangler.jsonc`.
++
+ Cheile Stripe și Resend **nu** sunt necesare aici — rămân exact cum erau,
+ editabile din `/admin/settings/stripe` (sunt salvate criptat în baza de
+ date, nu în variabile de mediu).
+diff --git a/app/(site)/product/[slug]/page.tsx b/app/(site)/product/[slug]/page.tsx
+index dc200a2..c5fed4e 100644
+--- a/app/(site)/product/[slug]/page.tsx
++++ b/app/(site)/product/[slug]/page.tsx
+@@ -36,7 +36,7 @@ export default async function ProductPage({ params }: Params) {
+   if (!product) notFound();
+ 
+   const inStock = !product.trackStock || product.stock > 0;
+-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
++  const siteUrl = process.env.SITE_URL || "https://example.com";
+ 
+   const jsonLd = {
+     "@context": "https://schema.org",
+diff --git a/app/admin/(dashboard)/settings/stripe/page.tsx b/app/admin/(dashboard)/settings/stripe/page.tsx
+index 6dd9a6e..2c3bc29 100644
+--- a/app/admin/(dashboard)/settings/stripe/page.tsx
++++ b/app/admin/(dashboard)/settings/stripe/page.tsx
+@@ -8,7 +8,7 @@ export default async function AdminStripeSettingsPage() {
+     "stripe_webhook_secret",
+   ]);
+ 
+-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://your-site.com";
++  const siteUrl = process.env.SITE_URL || "https://your-site.com";
+ 
+   return (
+     <div className="max-w-2xl">
+diff --git a/app/api/admin/upload/route.ts b/app/api/admin/upload/route.ts
+index 236b0c7..1e26fef 100644
+--- a/app/api/admin/upload/route.ts
++++ b/app/api/admin/upload/route.ts
+@@ -53,12 +53,12 @@ export async function POST(req: NextRequest) {
+         httpMetadata: { contentType: "image/webp" },
+       });
+       const publicBase =
+-        process.env.NEXT_PUBLIC_R2_CUSTOM_DOMAIN
+-          ? `https://${process.env.NEXT_PUBLIC_R2_CUSTOM_DOMAIN}`
+-          : process.env.NEXT_PUBLIC_R2_DEV_URL; // e.g. https://pub-xxxx.r2.dev
++        process.env.R2_CUSTOM_DOMAIN
++          ? `https://${process.env.R2_CUSTOM_DOMAIN}`
++          : process.env.R2_PUBLIC_URL; // e.g. https://pub-xxxx.r2.dev
+       if (!publicBase) {
+         throw new Error(
+-          "Set NEXT_PUBLIC_R2_CUSTOM_DOMAIN or NEXT_PUBLIC_R2_DEV_URL so uploaded images have a public URL."
++          "Set R2_CUSTOM_DOMAIN or R2_PUBLIC_URL so uploaded images have a public URL."
+         );
+       }
+       return NextResponse.json({ url: `${publicBase}/products/${filename}` });
+diff --git a/app/api/checkout/route.ts b/app/api/checkout/route.ts
+index b1f3b17..754b791 100644
+--- a/app/api/checkout/route.ts
++++ b/app/api/checkout/route.ts
+@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
+     });
+ 
+     const stripe = await getStripeClient();
+-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
++    const siteUrl = process.env.SITE_URL || req.nextUrl.origin;
+ 
+     const session = await stripe.checkout.sessions.create({
+       mode: "payment",
+diff --git a/app/layout.tsx b/app/layout.tsx
+index 0bed41d..ca56f48 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -24,7 +24,7 @@ const garamond = EB_Garamond({
+ 
+ export async function generateMetadata(): Promise<Metadata> {
+   const settings = await getAllSettings();
+-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
++  const siteUrl = process.env.SITE_URL || "https://example.com";
+ 
+   return {
+     metadataBase: new URL(siteUrl),
+@@ -57,7 +57,7 @@ export default async function RootLayout({
+   children,
+ }: Readonly<{ children: React.ReactNode }>) {
+   const settings = await getAllSettings();
+-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
++  const siteUrl = process.env.SITE_URL || "https://example.com";
+ 
+   const jsonLd = {
+     "@context": "https://schema.org",
+diff --git a/app/robots.ts b/app/robots.ts
+index f4d0768..8789459 100644
+--- a/app/robots.ts
++++ b/app/robots.ts
+@@ -1,7 +1,7 @@
+ import type { MetadataRoute } from "next";
+ 
+ export default function robots(): MetadataRoute.Robots {
+-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
++  const siteUrl = process.env.SITE_URL || "https://example.com";
+ 
+   return {
+     rules: [
+diff --git a/app/sitemap.ts b/app/sitemap.ts
+index 6fb1b5e..ecc857c 100644
+--- a/app/sitemap.ts
++++ b/app/sitemap.ts
+@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
+ import { prisma } from "@/lib/db";
+ 
+ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
++  const siteUrl = process.env.SITE_URL || "https://example.com";
+ 
+   const products = await prisma.product.findMany({
+     where: { isActive: true },
+diff --git a/next.config.ts b/next.config.ts
+index 97ebbd3..4dcb054 100644
+--- a/next.config.ts
++++ b/next.config.ts
+@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
+       // photos (either the *.r2.dev dev domain, or a custom domain you
+       // attach to the bucket — see CLOUDFLARE_DEPLOY.md).
+       { protocol: "https", hostname: "*.r2.dev" },
+-      { protocol: "https", hostname: process.env.NEXT_PUBLIC_R2_CUSTOM_DOMAIN || "images.invalid" },
++      { protocol: "https", hostname: process.env.R2_CUSTOM_DOMAIN || "images.invalid" },
+     ],
+   },
+ };
+diff --git a/wrangler.jsonc b/wrangler.jsonc
+index 7a85dcb..ed88470 100644
+--- a/wrangler.jsonc
++++ b/wrangler.jsonc
+@@ -31,5 +31,18 @@
+   // instead of `sharp` (which can't run on the Workers runtime).
+   "images": {
+     "binding": "IMAGES"
++  },
++
++  // IMPORTANT: these are read via `process.env.*` in server-only code
++  // (never in a client component), so they're deliberately NOT prefixed
++  // with NEXT_PUBLIC_ — that prefix makes Next.js freeze the value into
++  // the bundle at build time, and since the build for this adapter runs
++  // locally (not on Cloudflare), the value would freeze as "undefined"
++  // unless it's also set in your local .env. Keep the same values in
++  // both places (wrangler.jsonc "vars" for the deployed Worker, and a
++  // local .env for `next build`/`next dev`) whenever you change them.
++  "vars": {
++    "SITE_URL": "https://draculasoil.com",
++    "R2_PUBLIC_URL": "https://pub-f1cc3576e6ed47a79e95137a90a5747c.r2.dev"
+   }
+ }
+-- 
+2.43.0
+

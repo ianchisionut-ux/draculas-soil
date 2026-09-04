@@ -1,0 +1,69 @@
+From b3b13feffe72fdc0ac9070fb234a2ed175a7f1ed Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 3 Sep 2026 20:13:39 +0000
+Subject: [PATCH] Fix TypeScript errors surfaced by the Next.js 16.3.4 bump
+
+res.json() now returns Promise<unknown> instead of Promise<any> in
+current TypeScript's DOM lib, so the three places that read fields off
+a fetch response body without a type needed an explicit cast. These
+only surfaced once next was bumped to 16.3.4 for OpenNext compatibility.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PmGzXu2VBxGGDAmDZYhgdT
+---
+ app/(site)/cart/page.tsx         | 4 ++--
+ app/(site)/cos/page.tsx          | 4 ++--
+ components/admin/ProductForm.tsx | 4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/app/(site)/cart/page.tsx b/app/(site)/cart/page.tsx
+index adf62f7..31e9a7f 100644
+--- a/app/(site)/cart/page.tsx
++++ b/app/(site)/cart/page.tsx
+@@ -22,9 +22,9 @@ export default function CartPage() {
+           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+         }),
+       });
+-      const data = await res.json();
++      const data = (await res.json()) as { error?: string; url?: string };
+       if (!res.ok) throw new Error(data.error || "Something went wrong.");
+-      window.location.href = data.url;
++      window.location.href = data.url as string;
+     } catch (e) {
+       setError(e instanceof Error ? e.message : "Something went wrong.");
+       setLoading(false);
+diff --git a/app/(site)/cos/page.tsx b/app/(site)/cos/page.tsx
+index 787cd09..16156d8 100644
+--- a/app/(site)/cos/page.tsx
++++ b/app/(site)/cos/page.tsx
+@@ -22,9 +22,9 @@ export default function CartPage() {
+           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+         }),
+       });
+-      const data = await res.json();
++      const data = (await res.json()) as { error?: string; url?: string };
+       if (!res.ok) throw new Error(data.error || "A apărut o eroare.");
+-      window.location.href = data.url;
++      window.location.href = data.url as string;
+     } catch (e) {
+       setError(e instanceof Error ? e.message : "A apărut o eroare.");
+       setLoading(false);
+diff --git a/components/admin/ProductForm.tsx b/components/admin/ProductForm.tsx
+index e99b84e..7f3e36a 100644
+--- a/components/admin/ProductForm.tsx
++++ b/components/admin/ProductForm.tsx
+@@ -34,9 +34,9 @@ export function ProductForm({ action, initial, submitLabel, onDelete }: Props) {
+       const fd = new FormData();
+       fd.append("file", file);
+       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+-      const data = await res.json();
++      const data = (await res.json()) as { error?: string; url?: string };
+       if (!res.ok) throw new Error(data.error || "Upload failed.");
+-      setImageUrl(data.url);
++      setImageUrl(data.url as string);
+     } catch (err) {
+       setUploadError(err instanceof Error ? err.message : "Upload failed.");
+     } finally {
+-- 
+2.43.0
+

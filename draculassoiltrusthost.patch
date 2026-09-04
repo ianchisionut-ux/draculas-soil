@@ -1,0 +1,36 @@
+From 19346511cabfa429f591e85897a446a35e0e14ab Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 4 Sep 2026 13:50:53 +0000
+Subject: [PATCH] Trust the host in NextAuth (fixes admin login on Cloudflare)
+
+NextAuth v5 only auto-trusts the request host when it detects the
+VERCEL env var; anywhere else it refuses the request as an untrusted
+host, which renders as the generic "There is a problem with the server
+configuration" error page. Cloudflare Workers has no such env var, so
+/admin/login broke there. Setting trustHost: true fixes it.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PmGzXu2VBxGGDAmDZYhgdT
+---
+ auth.config.ts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/auth.config.ts b/auth.config.ts
+index 6d4bd92..b5f6d96 100644
+--- a/auth.config.ts
++++ b/auth.config.ts
+@@ -8,6 +8,11 @@ import type { NextAuthConfig } from "next-auth";
+  * server components).
+  */
+ export const authConfig: NextAuthConfig = {
++  // On Vercel, NextAuth auto-trusts the host because it detects the VERCEL
++  // env var. Cloudflare Workers has no equivalent signal, so without this
++  // NextAuth refuses the request as an "untrusted host" and shows a
++  // generic "There is a problem with the server configuration" error.
++  trustHost: true,
+   session: { strategy: "jwt" },
+   pages: {
+     signIn: "/admin/login",
+-- 
+2.43.0
+

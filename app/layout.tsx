@@ -24,7 +24,7 @@ const garamond = EB_Garamond({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getAllSettings();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+  const siteUrl = process.env.SITE_URL || "https://example.com";
 
   return {
     metadataBase: new URL(siteUrl),
@@ -57,7 +57,7 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const settings = await getAllSettings();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://example.com";
+  const siteUrl = process.env.SITE_URL || "https://example.com";
 
   const jsonLd = {
     "@context": "https://schema.org",

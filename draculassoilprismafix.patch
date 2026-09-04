@@ -1,0 +1,294 @@
+From db71d997793b5c91eab027b3cb6b2e87bf178270 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 3 Sep 2026 20:20:43 +0000
+Subject: [PATCH] Fix Prisma/Neon adapter version mismatch
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+@prisma/adapter-neon was pinned to 7.10.0 (Prisma ORM v7's driver-adapter
+API) while @prisma/client and prisma stayed on 5.22.0, an incompatible
+pairing that crashed at runtime ("Cannot read properties of undefined
+(reading 'bind')") the moment PrismaClient({ adapter }) actually ran —
+masked until now by two @ts-expect-error comments suppressing the type
+errors that would've flagged it. This surfaced during the Cloudflare
+build because OpenNext's page-data collection step evaluates lib/db.ts
+eagerly, but it was never actually Cloudflare-specific and would have
+broken any real production build.
+
+Fix: pin @prisma/adapter-neon to 5.22.0 and @neondatabase/serverless to
+^0.10.4, the version pairing @prisma/adapter-neon@5.22.0 actually
+supports, and drop the now-unnecessary @ts-expect-error comments.
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PmGzXu2VBxGGDAmDZYhgdT
+---
+ lib/db.ts         |   3 -
+ package-lock.json | 145 +++++++++++++++++++++++++++++++++++++---------
+ package.json      |   4 +-
+ 3 files changed, 119 insertions(+), 33 deletions(-)
+
+diff --git a/lib/db.ts b/lib/db.ts
+index 388e0d0..ebbd1d0 100644
+--- a/lib/db.ts
++++ b/lib/db.ts
+@@ -8,9 +8,6 @@ neonConfig.webSocketConstructor = ws;
+ const connectionString = `${process.env.DATABASE_URL}`;
+ const pool = new Pool({ connectionString });
+ 
+-// Ignorăm ambele erori de TypeScript cu @ts-expect-error
+-// @ts-expect-error
+ const adapter = new PrismaNeon(pool);
+ 
+-// @ts-expect-error
+ export const prisma = new PrismaClient({ adapter });
+\ No newline at end of file
+diff --git a/package-lock.json b/package-lock.json
+index ecbfb87..580a317 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -9,8 +9,8 @@
+       "version": "0.1.0",
+       "hasInstallScript": true,
+       "dependencies": {
+-        "@neondatabase/serverless": "^1.1.0",
+-        "@prisma/adapter-neon": "^7.10.0",
++        "@neondatabase/serverless": "^0.10.4",
++        "@prisma/adapter-neon": "5.22.0",
+         "@prisma/client": "^5.22.0",
+         "@stripe/stripe-js": "^9.12.0",
+         "bcryptjs": "^3.0.3",
+@@ -2962,12 +2962,12 @@
+       }
+     },
+     "node_modules/@neondatabase/serverless": {
+-      "version": "1.1.0",
+-      "resolved": "https://registry.npmjs.org/@neondatabase/serverless/-/serverless-1.1.0.tgz",
+-      "integrity": "sha512-r3ZZhRjEcfEdKIZnoB1RusNgvHuaBRqfCzV4Gi+5A9yUX0S4HTws/ASWqt13wL4y4I+0rqsWGdA2w7EQXHi3+Q==",
++      "version": "0.10.4",
++      "resolved": "https://registry.npmjs.org/@neondatabase/serverless/-/serverless-0.10.4.tgz",
++      "integrity": "sha512-2nZuh3VUO9voBauuh+IGYRhGU/MskWHt1IuZvHcJw6GLjDgtqj/KViKo7SIrLdGLdot7vFbiRRw+BgEy3wT9HA==",
+       "license": "MIT",
+-      "engines": {
+-        "node": ">=19.0.0"
++      "dependencies": {
++        "@types/pg": "8.11.6"
+       }
+     },
+     "node_modules/@next/env": {
+@@ -3964,14 +3964,16 @@
+       "license": "MIT"
+     },
+     "node_modules/@prisma/adapter-neon": {
+-      "version": "7.10.0",
+-      "resolved": "https://registry.npmjs.org/@prisma/adapter-neon/-/adapter-neon-7.10.0.tgz",
+-      "integrity": "sha512-2MbMamV0URbYwQ7JFZkWdHydrqqtc+GT2WbTw3VoCQmiecGYAvn6y7vkVDNR7CL/w8QOs4bCMLrhyY1Crxzoyg==",
++      "version": "5.22.0",
++      "resolved": "https://registry.npmjs.org/@prisma/adapter-neon/-/adapter-neon-5.22.0.tgz",
++      "integrity": "sha512-yslwDPykmkVfrlyK3T9idewFcjINnqbkHZYJRxetoOZZSjBlJqqhsZxpJ/dEedUzeWaeDlWOgSEKjQKI46/A9w==",
+       "license": "Apache-2.0",
+       "dependencies": {
+-        "@neondatabase/serverless": ">0.6.0 <2",
+-        "@prisma/driver-adapter-utils": "7.10.0",
+-        "postgres-array": "3.0.4"
++        "@prisma/driver-adapter-utils": "5.22.0",
++        "postgres-array": "3.0.2"
++      },
++      "peerDependencies": {
++        "@neondatabase/serverless": "^0.6.0 || ^0.7.0 || ^0.8.0 || ^0.9.0 || ^0.10.0"
+       }
+     },
+     "node_modules/@prisma/client": {
+@@ -3999,20 +4001,14 @@
+       "license": "Apache-2.0"
+     },
+     "node_modules/@prisma/driver-adapter-utils": {
+-      "version": "7.10.0",
+-      "resolved": "https://registry.npmjs.org/@prisma/driver-adapter-utils/-/driver-adapter-utils-7.10.0.tgz",
+-      "integrity": "sha512-u8zkcRLlaryO652T4qavBg0HmzNW5tSKdsCn6hc1PhWAp/J6k0vrxLuUs+b9o+HcjsK7Dfa01o4OFSn0frauJA==",
++      "version": "5.22.0",
++      "resolved": "https://registry.npmjs.org/@prisma/driver-adapter-utils/-/driver-adapter-utils-5.22.0.tgz",
++      "integrity": "sha512-Y8msGZl9unmVflXoqdxTejv99UD02Gp4VoIvkyw+YxNUIj7nRz35O7yf5D87qNmTiPMGCS1WjUucG9ZuNq8+tw==",
+       "license": "Apache-2.0",
+       "dependencies": {
+-        "@prisma/debug": "7.10.0"
++        "@prisma/debug": "5.22.0"
+       }
+     },
+-    "node_modules/@prisma/driver-adapter-utils/node_modules/@prisma/debug": {
+-      "version": "7.10.0",
+-      "resolved": "https://registry.npmjs.org/@prisma/debug/-/debug-7.10.0.tgz",
+-      "integrity": "sha512-caygJKtltmRIgdJ3jRpkOr7yM4DW6zxo5uOmojKWFb3asnxWoRkQOwZmXBgD8FZp4htrX+nMpcWqDwzlQ1+Y4g==",
+-      "license": "Apache-2.0"
+-    },
+     "node_modules/@prisma/engines": {
+       "version": "5.22.0",
+       "resolved": "https://registry.npmjs.org/@prisma/engines/-/engines-5.22.0.tgz",
+@@ -4945,7 +4941,6 @@
+       "version": "20.19.43",
+       "resolved": "https://registry.npmjs.org/@types/node/-/node-20.19.43.tgz",
+       "integrity": "sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==",
+-      "devOptional": true,
+       "license": "MIT",
+       "dependencies": {
+         "undici-types": "~6.21.0"
+@@ -4962,6 +4957,17 @@
+         "form-data": "^4.0.4"
+       }
+     },
++    "node_modules/@types/pg": {
++      "version": "8.11.6",
++      "resolved": "https://registry.npmjs.org/@types/pg/-/pg-8.11.6.tgz",
++      "integrity": "sha512-/2WmmBXHLsfRqzfHW7BNZ8SbYzE8OSk7i3WjFYvfgRHj7S1xj+16Je5fUKv3lVdVzk/zn9TXOqf+avFCFIE0yQ==",
++      "license": "MIT",
++      "dependencies": {
++        "@types/node": "*",
++        "pg-protocol": "*",
++        "pg-types": "^4.0.1"
++      }
++    },
+     "node_modules/@types/react": {
+       "version": "19.2.17",
+       "resolved": "https://registry.npmjs.org/@types/react/-/react-19.2.17.tgz",
+@@ -10608,6 +10614,12 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/obuf": {
++      "version": "1.1.2",
++      "resolved": "https://registry.npmjs.org/obuf/-/obuf-1.1.2.tgz",
++      "integrity": "sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==",
++      "license": "MIT"
++    },
+     "node_modules/on-finished": {
+       "version": "2.4.1",
+       "resolved": "https://registry.npmjs.org/on-finished/-/on-finished-2.4.1.tgz",
+@@ -10814,6 +10826,48 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/pg-int8": {
++      "version": "1.0.1",
++      "resolved": "https://registry.npmjs.org/pg-int8/-/pg-int8-1.0.1.tgz",
++      "integrity": "sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==",
++      "license": "ISC",
++      "engines": {
++        "node": ">=4.0.0"
++      }
++    },
++    "node_modules/pg-numeric": {
++      "version": "1.0.2",
++      "resolved": "https://registry.npmjs.org/pg-numeric/-/pg-numeric-1.0.2.tgz",
++      "integrity": "sha512-BM/Thnrw5jm2kKLE5uJkXqqExRUY/toLHda65XgFTBTFYZyopbKjBe29Ii3RbkvlsMoFwD+tHeGaCjjv0gHlyw==",
++      "license": "ISC",
++      "engines": {
++        "node": ">=4"
++      }
++    },
++    "node_modules/pg-protocol": {
++      "version": "1.16.0",
++      "resolved": "https://registry.npmjs.org/pg-protocol/-/pg-protocol-1.16.0.tgz",
++      "integrity": "sha512-sILXutLVjCLjcDuOmvhX5e2Z4cS5qG/6Bu3VkpFwdf/633ElGLpEh9bgmuI5I4sqKqkifQiGyiCcx1HdtrK7tg==",
++      "license": "MIT"
++    },
++    "node_modules/pg-types": {
++      "version": "4.1.0",
++      "resolved": "https://registry.npmjs.org/pg-types/-/pg-types-4.1.0.tgz",
++      "integrity": "sha512-o2XFanIMy/3+mThw69O8d4n1E5zsLhdO+OPqswezu7Z5ekP4hYDqlDjlmOpYMbzY2Br0ufCwJLdDIXeNVwcWFg==",
++      "license": "MIT",
++      "dependencies": {
++        "pg-int8": "1.0.1",
++        "pg-numeric": "1.0.2",
++        "postgres-array": "~3.0.1",
++        "postgres-bytea": "~3.0.0",
++        "postgres-date": "~2.1.0",
++        "postgres-interval": "^3.0.0",
++        "postgres-range": "^1.1.1"
++      },
++      "engines": {
++        "node": ">=10"
++      }
++    },
+     "node_modules/picocolors": {
+       "version": "1.1.1",
+       "resolved": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz",
+@@ -10878,14 +10932,50 @@
+       }
+     },
+     "node_modules/postgres-array": {
+-      "version": "3.0.4",
+-      "resolved": "https://registry.npmjs.org/postgres-array/-/postgres-array-3.0.4.tgz",
+-      "integrity": "sha512-nAUSGfSDGOaOAEGwqsRY27GPOea7CNipJPOA7lPbdEpx5Kg3qzdP0AaWC5MlhTWV9s4hFX39nomVZ+C4tnGOJQ==",
++      "version": "3.0.2",
++      "resolved": "https://registry.npmjs.org/postgres-array/-/postgres-array-3.0.2.tgz",
++      "integrity": "sha512-6faShkdFugNQCLwucjPcY5ARoW1SlbnrZjmGl0IrrqewpvxvhSLHimCVzqeuULCbG0fQv7Dtk1yDbG3xv7Veog==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/postgres-bytea": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/postgres-bytea/-/postgres-bytea-3.0.0.tgz",
++      "integrity": "sha512-CNd4jim9RFPkObHSjVHlVrxoVQXz7quwNFpz7RY1okNNme49+sVyiTvTRobiLV548Hx/hb1BG+iE7h9493WzFw==",
++      "license": "MIT",
++      "dependencies": {
++        "obuf": "~1.1.2"
++      },
++      "engines": {
++        "node": ">= 6"
++      }
++    },
++    "node_modules/postgres-date": {
++      "version": "2.1.0",
++      "resolved": "https://registry.npmjs.org/postgres-date/-/postgres-date-2.1.0.tgz",
++      "integrity": "sha512-K7Juri8gtgXVcDfZttFKVmhglp7epKb1K4pgrkLxehjqkrgPhfG6OO8LHLkfaqkbpjNRnra018XwAr1yQFWGcA==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/postgres-interval": {
++      "version": "3.0.0",
++      "resolved": "https://registry.npmjs.org/postgres-interval/-/postgres-interval-3.0.0.tgz",
++      "integrity": "sha512-BSNDnbyZCXSxgA+1f5UU2GmwhoI0aU5yMxRGO8CdFEcY2BQF9xm/7MqKnYoM1nJDk8nONNWDk9WeSmePFhQdlw==",
+       "license": "MIT",
+       "engines": {
+         "node": ">=12"
+       }
+     },
++    "node_modules/postgres-range": {
++      "version": "1.1.4",
++      "resolved": "https://registry.npmjs.org/postgres-range/-/postgres-range-1.1.4.tgz",
++      "integrity": "sha512-i/hbxIE9803Alj/6ytL7UHQxRvZkI9O4Sy+J3HGc4F4oo/2eQAjTSNJ0bfxyse3bH0nuVesCk+3IRLaMtG3H6w==",
++      "license": "MIT"
++    },
+     "node_modules/preact": {
+       "version": "10.24.3",
+       "resolved": "https://registry.npmjs.org/preact/-/preact-10.24.3.tgz",
+@@ -12287,7 +12377,6 @@
+       "version": "6.21.0",
+       "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz",
+       "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
+-      "devOptional": true,
+       "license": "MIT"
+     },
+     "node_modules/unenv": {
+diff --git a/package.json b/package.json
+index 40686af..832d36e 100644
+--- a/package.json
++++ b/package.json
+@@ -19,8 +19,8 @@
+     "seed": "tsx prisma/seed.ts"
+   },
+   "dependencies": {
+-    "@neondatabase/serverless": "^1.1.0",
+-    "@prisma/adapter-neon": "^7.10.0",
++    "@neondatabase/serverless": "^0.10.4",
++    "@prisma/adapter-neon": "5.22.0",
+     "@prisma/client": "^5.22.0",
+     "@stripe/stripe-js": "^9.12.0",
+     "bcryptjs": "^3.0.3",
+-- 
+2.43.0
+

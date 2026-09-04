@@ -8,7 +8,7 @@ export default async function AdminStripeSettingsPage() {
     "stripe_webhook_secret",
   ]);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://your-site.com";
+  const siteUrl = process.env.SITE_URL || "https://your-site.com";
 
   return (
     <div className="max-w-2xl">
