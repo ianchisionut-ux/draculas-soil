@@ -9,8 +9,10 @@
 // entirely in JS and works on Workers. See prisma.config.ts for the
 // datasource URL (Prisma 7 moved it out of this file).
 generator client {
-  provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  provider      = "prisma-client"
+  output        = "../lib/generated/prisma"
+  runtime       = "cloudflare"
+  compilerBuild = "small"
 }
 
 datasource db {
