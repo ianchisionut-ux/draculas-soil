@@ -13,30 +13,47 @@ type Props = {
     stock?: number;
     sku?: string;
     isActive?: boolean;
-    imageUrl?: string;
+    imageUrls?: string[];
   };
   submitLabel: string;
   onDelete?: () => Promise<void>;
 };
 
 export function ProductForm({ action, initial, submitLabel, onDelete }: Props) {
-  const [imageUrl, setImageUrl] = useState(initial?.imageUrl || "");
+  const [imageUrls, setImageUrls] = useState(initial?.imageUrls?.slice(0, 5) || []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (files.length === 0) return;
+
+    const availableSlots = 5 - imageUrls.length;
+    if (availableSlots <= 0) {
+      setUploadError("You can upload up to 5 images per product.");
+      return;
+    }
+    if (files.length > availableSlots) {
+      setUploadError(`You can add ${availableSlots} more image${availableSlots === 1 ? "" : "s"}.`);
+      return;
+    }
+
     setUploading(true);
     setUploadError(null);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const data = (await res.json()) as { error?: string; url?: string };
-      if (!res.ok) throw new Error(data.error || "Upload failed.");
-      setImageUrl(data.url as string);
+      const uploadedUrls = await Promise.all(
+        files.map(async (file) => {
+          const fd = new FormData();
+          fd.append("file", file);
+          const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+          const data = (await res.json()) as { error?: string; url?: string };
+          if (!res.ok) throw new Error(data.error || "Upload failed.");
+          return data.url as string;
+        }),
+      );
+      setImageUrls((current) => [...current, ...uploadedUrls].slice(0, 5));
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -114,16 +131,53 @@ export function ProductForm({ action, initial, submitLabel, onDelete }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm text-stone">Product image</label>
-        <input type="hidden" name="imageUrl" value={imageUrl} />
-        <div className="mt-2 flex items-center gap-4">
-          {imageUrl && (
-            <div className="relative h-20 w-20 border border-line bg-void">
-              <Image src={imageUrl} alt="Preview" fill sizes="80px" className="object-contain p-1" />
+        <label className="block text-sm text-stone">Product images (up to 5)</label>
+        {imageUrls.map((url) => (
+          <input key={url} type="hidden" name="imageUrls" value={url} />
+        ))}
+        <div className="mt-2">
+          {imageUrls.length > 0 && (
+            <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {imageUrls.map((url, index) => (
+                <div key={url} className="relative">
+                  <div className="relative aspect-square border border-line bg-void">
+                    <Image
+                      src={url}
+                      alt={`Product image ${index + 1}`}
+                      fill
+                      sizes="120px"
+                      className="object-contain p-1"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setImageUrls((current) => current.filter((_, i) => i !== index))}
+                    className="mt-1 w-full text-xs text-stone hover:text-blood-bright"
+                    aria-label={`Remove product image ${index + 1}`}
+                  >
+                    Remove
+                  </button>
+                  {index === 0 && (
+                    <span className="absolute left-1 top-1 bg-void/90 px-1.5 py-0.5 text-[10px] text-gold-bright">
+                      COVER
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           )}
           <div>
-            <input type="file" accept="image/*" onChange={handleFileChange} className="text-sm text-stone" />
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif"
+              multiple
+              disabled={uploading || imageUrls.length >= 5}
+              onChange={handleFileChange}
+              className="text-sm text-stone disabled:opacity-50"
+            />
+            <p className="mt-1 text-xs text-stone">
+              {imageUrls.length}/5 images. The first image is used as the cover.
+            </p>
             {uploading && <p className="mt-1 text-xs text-gold-bright">Uploading...</p>}
             {uploadError && <p className="mt-1 text-xs text-blood-bright">{uploadError}</p>}
           </div>

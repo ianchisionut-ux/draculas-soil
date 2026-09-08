@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
 import { AddToCartButton } from "@/components/site/AddToCartButton";
+import { ProductGallery } from "@/components/site/ProductGallery";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -63,22 +63,7 @@ export default async function ProductPage({ params }: Params) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="grid gap-12 md:grid-cols-2">
-        <div className="relative flex h-96 items-center justify-center border border-line bg-ink">
-          {product.images[0] ? (
-            <Image
-              src={product.images[0].url}
-              alt={product.images[0].alt || product.name}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-contain p-8"
-              priority
-            />
-          ) : (
-            <span className="font-label text-sm tracking-[0.2em] text-stone">
-              {product.name.toUpperCase()}
-            </span>
-          )}
-        </div>
+        <ProductGallery images={product.images} productName={product.name} />
 
         <div>
           <h1 className="font-display text-4xl">{product.name}</h1>

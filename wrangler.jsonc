@@ -1,39 +1,47 @@
-﻿@'
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "draculas-soil",
-	"main": ".open-next/worker.js",
-	"compatibility_date": "2025-09-01",
-	"compatibility_flags": [
-		"nodejs_compat",
-		"global_fetch_strictly_public"
-	],
-	"assets": {
-		"directory": ".open-next/assets",
-		"binding": "ASSETS"
-	},
-	"services": [
-		{
-			"binding": "WORKER_SELF_REFERENCE",
-			"service": "draculas-soil"
-		}
-	],
-	"r2_buckets": [
-		{
-			"binding": "NEXT_INC_CACHE_R2_BUCKET",
-			"bucket_name": "draculas-soil-cache"
-		},
-		{
-			"binding": "PRODUCT_IMAGES",
-			"bucket_name": "draculas-soil-images"
-		}
-	],
-	"images": {
-		"binding": "IMAGES"
-	},
-	"vars": {
-		"SITE_URL": "https://draculasoil.com",
-		"R2_PUBLIC_URL": "https://pub-f1cc3576e6ed47a79e95137a90a5747c.r2.dev"
-	}
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "draculas-soil",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "draculas-soil"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "draculasoil.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.draculasoil.com",
+      "custom_domain": true
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "draculas-soil-cache"
+    },
+    {
+      "binding": "PRODUCT_IMAGES",
+      "bucket_name": "draculas-soil-images"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "vars": {
+    "SITE_URL": "https://draculasoil.com",
+    "R2_PUBLIC_URL": "https://pub-f1cc3576e6ed47a79e95137a90a5747c.r2.dev"
+  }
 }
-'@ | Set-Content -Encoding utf8 wrangler.jsonc

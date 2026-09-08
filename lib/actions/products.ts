@@ -19,6 +19,19 @@ async function requireAdmin() {
   if (!session?.user) throw new Error("Unauthorized");
 }
 
+function getImageUrls(formData: FormData): string[] {
+  const imageUrls = formData
+    .getAll("imageUrls")
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+
+  if (imageUrls.length > 5) {
+    throw new Error("A product can have at most 5 images.");
+  }
+
+  return [...new Set(imageUrls)];
+}
+
 export async function createProduct(formData: FormData) {
   await requireAdmin();
 
@@ -29,7 +42,7 @@ export async function createProduct(formData: FormData) {
   const stock = parseInt(String(formData.get("stock") || "0"), 10);
   const sku = String(formData.get("sku") || "").trim() || undefined;
   const isActive = formData.get("isActive") === "on";
-  const imageUrl = String(formData.get("imageUrl") || "").trim();
+  const imageUrls = getImageUrls(formData);
 
   if (!name || priceCents <= 0) {
     throw new Error("A valid name and price are required.");
@@ -49,7 +62,11 @@ export async function createProduct(formData: FormData) {
       stock,
       sku,
       isActive,
-      images: imageUrl ? { create: [{ url: imageUrl, alt: name, position: 0 }] } : undefined,
+      images: imageUrls.length
+        ? {
+            create: imageUrls.map((url, position) => ({ url, alt: name, position })),
+          }
+        : undefined,
     },
   });
 
@@ -68,7 +85,7 @@ export async function updateProduct(productId: string, formData: FormData) {
   const stock = parseInt(String(formData.get("stock") || "0"), 10);
   const sku = String(formData.get("sku") || "").trim() || undefined;
   const isActive = formData.get("isActive") === "on";
-  const imageUrl = String(formData.get("imageUrl") || "").trim();
+  const imageUrls = getImageUrls(formData);
 
   if (!name || priceCents <= 0) {
     throw new Error("A valid name and price are required.");
@@ -76,20 +93,20 @@ export async function updateProduct(productId: string, formData: FormData) {
 
   await prisma.product.update({
     where: { id: productId },
-    data: { name, shortDesc, description, priceCents, stock, sku, isActive },
+    data: {
+      name,
+      shortDesc,
+      description,
+      priceCents,
+      stock,
+      sku,
+      isActive,
+      images: {
+        deleteMany: {},
+        create: imageUrls.map((url, position) => ({ url, alt: name, position })),
+      },
+    },
   });
-
-  if (imageUrl) {
-    const existingImage = await prisma.productImage.findFirst({
-      where: { productId },
-      orderBy: { position: "asc" },
-    });
-    if (existingImage) {
-      await prisma.productImage.update({ where: { id: existingImage.id }, data: { url: imageUrl, alt: name } });
-    } else {
-      await prisma.productImage.create({ data: { productId, url: imageUrl, alt: name, position: 0 } });
-    }
-  }
 
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${productId}`);

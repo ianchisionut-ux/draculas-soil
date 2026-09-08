@@ -11,8 +11,9 @@ import {
   IconShieldCheck,
   IconCalendarCheck,
   IconLock,
-  IconCard,
 } from "@/components/icons/Icons";
+
+export const dynamic = "force-dynamic";
 
 const TRUST_BADGES = [
   { icon: IconCertificate, label: "Certificate of authenticity", desc: "Included with every order" },

@@ -25,6 +25,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No file was sent." }, { status: 400 });
   }
 
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
+  if (!allowedTypes.has(file.type)) {
+    return NextResponse.json({ error: "Use a JPG, PNG, WebP, or AVIF image." }, { status: 400 });
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: "Each image must be smaller than 10 MB." }, { status: 400 });
+  }
+
   const arrayBuffer = await file.arrayBuffer();
   const filename = `${Date.now()}-${Math.round(Math.random() * 1e6)}.webp`;
 

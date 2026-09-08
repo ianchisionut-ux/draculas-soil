@@ -7,7 +7,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const product = await prisma.product.findUnique({
     where: { id },
-    include: { images: { orderBy: { position: "asc" }, take: 1 } },
+    include: { images: { orderBy: { position: "asc" }, take: 5 } },
   });
   if (!product) notFound();
 
@@ -28,7 +28,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           stock: product.stock,
           sku: product.sku ?? undefined,
           isActive: product.isActive,
-          imageUrl: product.images[0]?.url,
+          imageUrls: product.images.map((image) => image.url),
         }}
       />
     </div>
