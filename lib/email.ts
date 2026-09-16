@@ -5,6 +5,8 @@ import type { Order, OrderItem } from "@/lib/generated/prisma/client";
 
 type OrderWithItems = Order & { items: OrderItem[] };
 
+const ADMIN_ORDER_EMAIL = "mastanul@yahoo.com";
+
 async function getResendClient(): Promise<{ client: Resend; from: string } | null> {
   const settings = await getSettings(["resend_api_key", "email_from", "order_emails_enabled"]);
 
@@ -71,17 +73,17 @@ export async function sendOrderConfirmationEmail(order: OrderWithItems): Promise
  * Notifies the shop owner that a new paid order came in.
  */
 export async function sendAdminOrderNotification(order: OrderWithItems): Promise<void> {
-  try {
-    const resend = await getResendClient();
-    if (!resend) return;
+  const resend = await getResendClient();
+  if (!resend) {
+    throw new Error("Resend is not configured or order emails are disabled.");
+  }
 
-    const { contact_email } = await getSettings(["contact_email"]);
-    if (!contact_email) return;
-
-    await resend.client.emails.send({
+  const { error } = await resend.client.emails.send(
+    {
       from: resend.from,
-      to: contact_email,
-      subject: `New order — ${order.orderNumber} (${formatPrice(order.totalCents, order.currency)})`,
+      to: ADMIN_ORDER_EMAIL,
+      replyTo: order.email || undefined,
+      subject: `New paid order — ${order.orderNumber} (${formatPrice(order.totalCents, order.currency)})`,
       html: `
         <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;color:#1a1a1a;">
           <h1 style="font-size:22px;">New paid order</h1>
@@ -90,14 +92,19 @@ export async function sendAdminOrderNotification(order: OrderWithItems): Promise
             ${itemsToHtml(order.items, order.currency)}
           </table>
           <p><strong>Customer:</strong> ${order.customerName || "—"} (${order.email || "—"})</p>
-          <p><strong>Ship to:</strong><br/>
+          <p><strong>Shipping address:</strong><br/>
           ${order.shippingAddress1}${order.shippingAddress2 ? `, ${order.shippingAddress2}` : ""}<br/>
           ${order.shippingCity}${order.shippingState ? `, ${order.shippingState}` : ""} ${order.shippingPostalCode}<br/>
           ${order.shippingCountry}</p>
         </div>
       `,
-    });
-  } catch (err) {
-    console.error("Failed to send admin order notification email:", err);
+    },
+    {
+      idempotencyKey: `admin-order-${order.id}`,
+    }
+  );
+
+  if (error) {
+    throw new Error(`Resend failed to send the admin order email: ${error.message}`);
   }
 }
