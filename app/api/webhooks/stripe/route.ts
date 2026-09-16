@@ -24,12 +24,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
+  if (
+    event.type === "checkout.session.completed" ||
+    event.type === "checkout.session.async_payment_succeeded"
+  ) {
     const session = event.data.object as Stripe.Checkout.Session;
+    if (session.payment_status !== "paid") {
+      return NextResponse.json({ received: true });
+    }
+
     const orderId = session.metadata?.orderId;
     if (orderId) {
       const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
-      if (order && order.status === "PENDING") {
+      if (order && (order.status === "PENDING" || order.status === "PAID")) {
         const details = session.customer_details; // billing/contact info
         const billingAddress = details?.address;
 
@@ -52,8 +59,8 @@ export async function POST(req: NextRequest) {
         const shippingAddress = shippingInfo?.address ?? billingAddress;
         const shippingName = shippingInfo?.name ?? details?.name;
 
-        await prisma.order.update({
-          where: { id: orderId },
+        const paymentUpdate = await prisma.order.updateMany({
+          where: { id: orderId, status: "PENDING" },
           data: {
             status: "PAID",
             email: details?.email || order.email,
@@ -69,12 +76,14 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Decrement stock for tracked products
-        for (const item of order.items) {
-          await prisma.product.updateMany({
-            where: { id: item.productId, trackStock: true },
-            data: { stock: { decrement: item.quantity } },
-          });
+        // Only the first delivery of the Stripe event changes inventory.
+        if (paymentUpdate.count === 1) {
+          for (const item of order.items) {
+            await prisma.product.updateMany({
+              where: { id: item.productId, trackStock: true },
+              data: { stock: { decrement: item.quantity } },
+            });
+          }
         }
 
         // Re-fetch with the just-written customer/shipping details for the emails below.
@@ -83,10 +92,15 @@ export async function POST(req: NextRequest) {
           include: { items: true },
         });
         if (paidOrder) {
-          await Promise.all([
-            sendOrderConfirmationEmail(paidOrder),
-            sendAdminOrderNotification(paidOrder),
-          ]);
+          // The admin notification is awaited and uses a stable Resend
+          // idempotency key. If Resend is temporarily unavailable, returning
+          // a 500 makes Stripe retry without duplicating the email.
+          await sendAdminOrderNotification(paidOrder);
+
+          // Customer email remains non-blocking for checkout processing.
+          if (paymentUpdate.count === 1) {
+            await sendOrderConfirmationEmail(paidOrder);
+          }
         }
       }
     }
