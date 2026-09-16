@@ -9,7 +9,6 @@ const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/#story-detail", label: "Story" },
   { href: "/#product", label: "Product" },
-  { href: "/certificate", label: "Certificate" },
   { href: "/#reviews", label: "Reviews" },
   { href: "/#product", label: "Collector Edition" },
   { href: "/#faq", label: "FAQ" },

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
 import { updateOrderStatus, deleteOrder } from "@/lib/actions/orders";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
+import { CertificateCard } from "@/components/admin/CertificateCard";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending",
@@ -79,6 +80,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </p>
       </div>
 
+      <CertificateCard order={order} />
       <form action={boundUpdate} className="mt-8 flex items-center gap-3">
         <label className="text-sm text-stone">Order status</label>
         <select

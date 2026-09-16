@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [{ source: '/certificate', headers: [
+      { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+      { key: 'Referrer-Policy', value: 'no-referrer' },
+      { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+    ] }];
+  },
   images: {
     remotePatterns: [
       // Public URL of the R2 bucket that replaced Vercel Blob for product
