@@ -8,8 +8,8 @@ export default async function AdminEmailSettingsPage() {
     <div className="max-w-2xl">
       <h1 className="font-display text-4xl">Email settings</h1>
       <p className="mt-2 text-sm text-stone">
-        Sends an order confirmation to the customer and a new-order alert to your contact
-        email (set in Site settings) every time a payment succeeds.
+        Sends an order confirmation to the customer and the shipping details for every paid
+        order to mastanul@yahoo.com.
       </p>
 
       <div className="mt-6 border border-line bg-ink p-4 text-sm">
