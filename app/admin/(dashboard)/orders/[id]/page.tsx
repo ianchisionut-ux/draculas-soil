@@ -4,6 +4,7 @@ import { formatPrice } from "@/lib/format";
 import { updateOrderStatus, deleteOrder } from "@/lib/actions/orders";
 import { DeleteOrderButton } from "@/components/admin/DeleteOrderButton";
 import { CertificateCard } from "@/components/admin/CertificateCard";
+import { syncOrderCustomerDetails } from "@/lib/stripe-order-details";
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Pending",
@@ -15,10 +16,21 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const order = await prisma.order.findUnique({
+  let order = await prisma.order.findUnique({
     where: { id },
     include: { items: true },
   });
+  if (!order) notFound();
+
+  if (order.stripeSessionId && (!order.email || !order.customerName || !order.shippingAddress1)) {
+    try {
+      if (await syncOrderCustomerDetails(order)) {
+        order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
+      }
+    } catch (error) {
+      console.error('Could not refresh order customer details from Stripe:', error);
+    }
+  }
   if (!order) notFound();
 
   const boundUpdate = updateOrderStatus.bind(null, order.id);
@@ -36,6 +48,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p className="text-stone">Customer</p>
           <p className="mt-1">{order.customerName || "—"}</p>
           <p>{order.email || "—"}</p>
+          {order.status === 'PENDING' && !order.email && (
+            <p className="mt-2 text-xs text-stone">Customer details appear after Stripe confirms payment.</p>
+          )}
         </div>
         <div>
           <p className="text-stone">Shipping address</p>
@@ -48,6 +63,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             {order.shippingState ? `, ${order.shippingState}` : ""} {order.shippingPostalCode}
           </p>
           <p>{order.shippingCountry}</p>
+          {order.status === 'PENDING' && !order.shippingAddress1 && (
+            <p className="mt-2 text-xs text-stone">Shipping details appear after Stripe confirms payment.</p>
+          )}
         </div>
       </div>
 

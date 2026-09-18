@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getSetting } from "@/lib/settings";
 import { getStripeClient } from "@/lib/stripe";
 import { sendOrderConfirmationEmail, sendAdminOrderNotification } from "@/lib/email";
+import { checkoutCustomerDetails } from "@/lib/stripe-order-details";
 
 export async function POST(req: NextRequest) {
   const signature = req.headers.get("stripe-signature");
@@ -28,7 +29,10 @@ export async function POST(req: NextRequest) {
     event.type === "checkout.session.completed" ||
     event.type === "checkout.session.async_payment_succeeded"
   ) {
-    const session = event.data.object as Stripe.Checkout.Session;
+    // Retrieve the complete session instead of relying on the webhook payload,
+    // which may be a thin event without collected shipping information.
+    const eventSession = event.data.object as Stripe.Checkout.Session;
+    const session = await stripe.checkout.sessions.retrieve(eventSession.id);
     if (session.payment_status !== "paid") {
       return NextResponse.json({ received: true });
     }
@@ -37,43 +41,20 @@ export async function POST(req: NextRequest) {
     if (orderId) {
       const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
       if (order && (order.status === "PENDING" || order.status === "PAID")) {
-        const details = session.customer_details; // billing/contact info
-        const billingAddress = details?.address;
-
-        // Shipping details live in different places depending on the Stripe
-        // API version (Stripe restructured this in 2025). Try every known
-        // location, falling back to the billing address as a last resort
-        // rather than leaving the order with no address at all.
-        const sessionWithShipping = session as unknown as {
-          collected_information?: {
-            shipping_details?: { name?: string | null; address?: Stripe.Address | null };
-          };
-          shipping_details?: { name?: string | null; address?: Stripe.Address | null };
-        };
-
-        const shippingInfo =
-          sessionWithShipping.collected_information?.shipping_details ??
-          sessionWithShipping.shipping_details ??
-          null;
-
-        const shippingAddress = shippingInfo?.address ?? billingAddress;
-        const shippingName = shippingInfo?.name ?? details?.name;
-
         const paymentUpdate = await prisma.order.updateMany({
           where: { id: orderId, status: "PENDING" },
           data: {
             status: "PAID",
-            email: details?.email || order.email,
-            customerName: shippingName || order.customerName,
-            shippingAddress1: shippingAddress?.line1 || "",
-            shippingAddress2: shippingAddress?.line2 || undefined,
-            shippingCity: shippingAddress?.city || "",
-            shippingState: shippingAddress?.state || undefined,
-            shippingPostalCode: shippingAddress?.postal_code || "",
-            shippingCountry: shippingAddress?.country || "",
             stripePaymentIntent:
               typeof session.payment_intent === "string" ? session.payment_intent : undefined,
           },
+        });
+
+        // Always refresh customer data, including on webhook retries. This
+        // repairs paid orders created by an older handler that stored blanks.
+        await prisma.order.update({
+          where: { id: orderId },
+          data: checkoutCustomerDetails(session, order),
         });
 
         // Only the first delivery of the Stripe event changes inventory.
