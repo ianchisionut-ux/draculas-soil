@@ -38,7 +38,7 @@ export function EmailSettingsForm({ settings }: { settings: Record<string, strin
       </div>
 
       <div>
-        <label className="block text-sm text-stone">Sender ("Name &lt;email@domain.com&gt;")</label>
+        <label className="block text-sm text-stone">Sender (&quot;Name &lt;email@domain.com&gt;&quot;)</label>
         <input
           name="email_from"
           defaultValue={settings.email_from}
