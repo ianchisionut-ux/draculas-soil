@@ -5,13 +5,21 @@ import Image from "next/image";
 import { useState } from "react";
 import { useCart } from "@/components/site/CartContext";
 import { formatPrice } from "@/lib/format";
+import { SHIPPING_COUNTRIES, type ShippingCountry } from "@/lib/shipping";
+
+const countryNames = new Intl.DisplayNames(["en"], { type: "region" });
 
 export default function CartPage() {
   const { items, setQuantity, removeItem, totalCents } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shippingCountry, setShippingCountry] = useState<ShippingCountry | "">("");
 
   async function handleCheckout() {
+    if (!shippingCountry) {
+      setError("Select your shipping country before checkout.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -19,6 +27,7 @@ export default function CartPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          shippingCountry,
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
         }),
       });
@@ -95,6 +104,23 @@ export default function CartPage() {
         <span className="font-label text-xl text-gold-bright">{formatPrice(totalCents)}</span>
       </div>
       <p className="mt-1 text-sm text-stone">Shipping costs are calculated at checkout.</p>
+
+      <label htmlFor="shipping-country" className="mt-6 block text-sm text-stone">
+        Shipping country
+      </label>
+      <select
+        id="shipping-country"
+        value={shippingCountry}
+        onChange={(event) => setShippingCountry(event.target.value as ShippingCountry | "")}
+        className="mt-2 w-full border border-line bg-ink px-3 py-3 text-bone outline-none focus:border-gold"
+      >
+        <option value="">Select a country</option>
+        {SHIPPING_COUNTRIES.map((country) => (
+          <option key={country} value={country}>
+            {countryNames.of(country)}
+          </option>
+        ))}
+      </select>
 
       {error && <p className="mt-4 text-sm text-blood-bright">{error}</p>}
 

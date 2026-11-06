@@ -18,18 +18,24 @@ export async function updateSiteSettings(_prev: ActionState, formData: FormData)
   try {
     await requireAdminSession();
 
+    const money = (key: string): string => {
+      const value = Number(formData.get(key));
+      if (!Number.isFinite(value) || value < 0 || !Number.isSafeInteger(Math.round(value * 100))) {
+        throw new Error("Shipping amounts must be valid non-negative numbers.");
+      }
+      return String(Math.round(value * 100));
+    };
+
     await setSettings({
       site_name: String(formData.get("site_name") || ""),
       site_tagline: String(formData.get("site_tagline") || ""),
       contact_email: String(formData.get("contact_email") || ""),
       support_phone: String(formData.get("support_phone") || ""),
       currency: String(formData.get("currency") || "usd"),
-      shipping_flat_cents: String(
-        Math.round(parseFloat(String(formData.get("shipping_flat") || "0")) * 100)
-      ),
-      free_shipping_threshold_cents: String(
-        Math.round(parseFloat(String(formData.get("free_shipping_threshold") || "0")) * 100)
-      ),
+      shipping_flat_cents: money("shipping_flat"),
+      free_shipping_threshold_cents: money("free_shipping_threshold"),
+      shipping_world_cents: money("shipping_world"),
+      shipping_australia_cents: money("shipping_australia"),
       seo_default_title: String(formData.get("seo_default_title") || ""),
       seo_default_description: String(formData.get("seo_default_description") || ""),
       og_image_url: String(formData.get("og_image_url") || ""),

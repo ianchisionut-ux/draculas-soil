@@ -4,8 +4,10 @@ import { prisma } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
 import { getSettings } from "@/lib/settings";
 import { generateOrderNumber } from "@/lib/format";
+import { SHIPPING_COUNTRIES, shippingCost } from "@/lib/shipping";
 
 const bodySchema = z.object({
+  shippingCountry: z.enum(SHIPPING_COUNTRIES),
   items: z
     .array(
       z.object({
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid cart." }, { status: 400 });
     }
-    const { items } = parsed.data;
+    const { items, shippingCountry } = parsed.data;
 
     // Always re-fetch prices & stock from the DB — never trust client-sent prices.
     const products = await prisma.product.findMany({
@@ -52,6 +54,8 @@ export async function POST(req: NextRequest) {
       "currency",
       "shipping_flat_cents",
       "free_shipping_threshold_cents",
+      "shipping_world_cents",
+      "shipping_australia_cents",
     ]);
     const currency = settings.currency || "usd";
 
@@ -60,9 +64,18 @@ export async function POST(req: NextRequest) {
       return sum + product.priceCents * item.quantity;
     }, 0);
 
-    const freeThreshold = parseInt(settings.free_shipping_threshold_cents || "0", 10);
-    const flatShipping = parseInt(settings.shipping_flat_cents || "0", 10);
-    const shippingCents = freeThreshold > 0 && subtotalCents >= freeThreshold ? 0 : flatShipping;
+    const shippingCents = shippingCost(shippingCountry, subtotalCents, {
+      shipping_flat_cents: settings.shipping_flat_cents,
+      free_shipping_threshold_cents: settings.free_shipping_threshold_cents,
+      shipping_world_cents: settings.shipping_world_cents,
+      shipping_australia_cents: settings.shipping_australia_cents,
+    });
+    if (shippingCents === null) {
+      return NextResponse.json(
+        { error: "Shipping to this country is not available yet. Please contact us before ordering." },
+        { status: 400 }
+      );
+    }
 
     const order = await prisma.order.create({
       data: {
@@ -73,7 +86,7 @@ export async function POST(req: NextRequest) {
         shippingAddress1: "",
         shippingCity: "",
         shippingPostalCode: "",
-        shippingCountry: "",
+        shippingCountry,
         subtotalCents,
         shippingCents,
         totalCents: subtotalCents + shippingCents,
@@ -116,15 +129,7 @@ export async function POST(req: NextRequest) {
       }),
       billing_address_collection: "required",
       shipping_address_collection: {
-        allowed_countries: [
-          "US", "CA", "MX", "GB", "IE", "RO", "DE", "FR", "IT", "ES", "PT",
-          "NL", "BE", "LU", "AT", "CH", "SE", "NO", "DK", "FI", "IS",
-          "PL", "CZ", "SK", "HU", "SI", "HR", "BG", "GR", "EE", "LV", "LT",
-          "AU", "NZ", "JP", "KR", "SG", "HK", "TW", "MY", "TH", "PH", "ID", "VN", "IN",
-          "AE", "SA", "IL", "TR", "ZA",
-          "BR", "AR", "CL", "CO", "PE", "UY", "CR", "PA",
-          "MT", "CY", "LI", "MC", "AD", "SM",
-        ],
+        allowed_countries: [shippingCountry],
       },
       shipping_options: shippingCents > 0
         ? [
