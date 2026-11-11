@@ -26,7 +26,7 @@ export const SETTING_DEFAULTS = {
   stripe_webhook_secret: "",
   seo_default_title: "Dracula's Soil | Authentic Soil from Transylvania",
   seo_default_description:
-    "Authentic soil collected near Bran Castle, Transylvania, Romania. Certificate of authenticity included. Worldwide shipping rates shown at checkout.",
+    "Authentic soil collected near Bran Castle, Transylvania, Romania. Digital certificate of authenticity included. Worldwide shipping rates shown at checkout.",
   og_image_url: "",
   google_site_verification: "",
   story_title: "The legend of the world's most famous vampire",

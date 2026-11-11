@@ -18,7 +18,7 @@ const SOCIAL_LINKS = [
 
 const BADGES = [
   { icon: IconShieldCheck, title: "Authentic Romanian product", desc: "Hand-collected near Bran Castle" },
-  { icon: IconCertificate, title: "Certificate of authenticity", desc: "Included with every order" },
+  { icon: IconCertificate, title: "Digital certificate of authenticity", desc: "Included with every order" },
   { icon: IconGlobe, title: "Worldwide shipping", desc: "We ship to 70+ countries" },
   { icon: IconCard, title: "Secure payment", desc: "Visa, Mastercard & more via Stripe" },
   { icon: IconStar, title: "30-day guarantee", desc: "Money back, no questions asked" },

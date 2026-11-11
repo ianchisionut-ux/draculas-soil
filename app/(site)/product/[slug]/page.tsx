@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/format";
 import { AddToCartButton } from "@/components/site/AddToCartButton";
 import { ProductGallery } from "@/components/site/ProductGallery";
+import { digitalCertificateCopy } from "@/lib/certificate-copy";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -21,10 +22,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   return {
     title: product.metaTitle || product.name,
-    description: product.metaDesc || product.shortDesc,
+    description: digitalCertificateCopy(product.metaDesc || product.shortDesc),
     openGraph: {
       title: product.metaTitle || product.name,
-      description: product.metaDesc || product.shortDesc,
+      description: digitalCertificateCopy(product.metaDesc || product.shortDesc),
       images: product.images[0] ? [product.images[0].url] : undefined,
     },
   };
@@ -42,7 +43,7 @@ export default async function ProductPage({ params }: Params) {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.shortDesc,
+    description: digitalCertificateCopy(product.shortDesc),
     image: product.images.map((i) => i.url),
     sku: product.sku || undefined,
     offers: {
@@ -67,7 +68,7 @@ export default async function ProductPage({ params }: Params) {
 
         <div>
           <h1 className="font-display text-4xl">{product.name}</h1>
-          <p className="mt-3 text-lg text-stone">{product.shortDesc}</p>
+          <p className="mt-3 text-lg text-stone">{digitalCertificateCopy(product.shortDesc)}</p>
           <p className="mt-6 font-label text-2xl text-gold-bright">
             {formatPrice(product.priceCents, product.currency)}
           </p>
@@ -92,7 +93,7 @@ export default async function ProductPage({ params }: Params) {
           <div className="hairline my-8" />
           <div
             className="prose prose-invert max-w-none text-stone"
-            dangerouslySetInnerHTML={{ __html: product.description }}
+            dangerouslySetInnerHTML={{ __html: digitalCertificateCopy(product.description) }}
           />
         </div>
       </div>

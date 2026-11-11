@@ -16,7 +16,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const TRUST_BADGES = [
-  { icon: IconCertificate, label: "Certificate of authenticity", desc: "Included with every order" },
+  { icon: IconCertificate, label: "Digital certificate of authenticity", desc: "Included with every order" },
   { icon: IconGlobe, label: "Worldwide shipping", desc: "70+ countries" },
   { icon: IconTruck, label: "Free shipping", desc: "On eligible orders" },
   { icon: IconShieldCheck, label: "30-day guarantee", desc: "Money back, no questions asked" },
@@ -39,7 +39,7 @@ const EXPLORE_CARDS = [
   },
   {
     title: "The Product",
-    desc: "Authentic soil, carefully collected and preserved with a certificate of authenticity.",
+    desc: "Authentic soil, carefully collected and preserved with a digital certificate of authenticity.",
     cta: "VIEW PRODUCT",
     href: "#product",
     image: "/images/card-product.png",
@@ -98,7 +98,7 @@ export default async function HomePage() {
             </h1>
             <p className="mt-6 max-w-md text-lg text-stone">
               Authentic soil, carefully collected near Bran Castle, Transylvania, Romania —
-              comes with a certificate of authenticity.
+              comes with a digital certificate of authenticity.
             </p>
 
             <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-4">
@@ -238,7 +238,7 @@ export default async function HomePage() {
               Is the soil really collected near Bran Castle?
             </p>
             <p className="mt-1 text-stone">
-              Yes. Every order includes a certificate of authenticity confirming the location
+              Yes. Every order includes a digital certificate of authenticity confirming the location
               and date of collection.
             </p>
           </div>

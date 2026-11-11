@@ -34,13 +34,13 @@ async function main() {
         name: "Dracula's Soil — Original",
         shortDesc: "Authentic soil collected near Bran Castle, Transylvania.",
         description:
-          "<p>Each jar contains authentic soil, hand-collected near Bran Castle, in the heart of Transylvania. Carefully packaged and accompanied by a signed certificate of authenticity.</p>",
+          "<p>Each jar contains authentic soil, hand-collected near Bran Castle, in the heart of Transylvania. Carefully packaged and accompanied by a digital certificate of authenticity.</p>",
         priceCents: 4900,
         stock: 100,
         isActive: true,
         isFeatured: true,
         metaTitle: "Dracula's Soil — Authentic Soil from Transylvania",
-        metaDesc: "Authentic soil collected near Bran Castle, with certificate of authenticity included. Worldwide shipping.",
+        metaDesc: "Authentic soil collected near Bran Castle, with digital certificate of authenticity included. Worldwide shipping.",
         images: {
           create: [
             { url: "/images/product-bottle-rock.jpg", alt: "Dracula's Soil bottle", position: 0 },

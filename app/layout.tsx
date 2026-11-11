@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Cinzel, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import { getAllSettings } from "@/lib/settings";
+import { digitalCertificateCopy } from "@/lib/certificate-copy";
 
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -25,6 +26,7 @@ const garamond = EB_Garamond({
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getAllSettings();
   const siteUrl = process.env.SITE_URL || "https://example.com";
+  const description = digitalCertificateCopy(settings.seo_default_description);
 
   return {
     metadataBase: new URL(siteUrl),
@@ -32,13 +34,13 @@ export async function generateMetadata(): Promise<Metadata> {
       default: settings.seo_default_title,
       template: `%s | ${settings.site_name}`,
     },
-    description: settings.seo_default_description,
+    description,
     verification: settings.google_site_verification
       ? { google: settings.google_site_verification }
       : undefined,
     openGraph: {
       title: settings.seo_default_title,
-      description: settings.seo_default_description,
+      description,
       siteName: settings.site_name,
       type: "website",
       images: settings.og_image_url ? [settings.og_image_url] : undefined,
@@ -46,7 +48,7 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
       title: settings.seo_default_title,
-      description: settings.seo_default_description,
+      description,
       images: settings.og_image_url ? [settings.og_image_url] : undefined,
     },
     robots: { index: true, follow: true },
@@ -64,7 +66,7 @@ export default async function RootLayout({
     "@type": "Organization",
     name: settings.site_name,
     url: siteUrl,
-    description: settings.seo_default_description,
+    description: digitalCertificateCopy(settings.seo_default_description),
     ...(settings.contact_email && { email: settings.contact_email }),
   };
 

@@ -42,7 +42,7 @@ export function createCertificatePdf(orderNumber: string) {
   const pageHeight = imageHeight + FOOTER_HEIGHT;
   const label = `ORDER ${orderNumber}`;
   const labelX = Math.max(30, (PAGE_WIDTH - label.length * 9) / 2);
-  const caption = 'Unique certificate of authenticity for this order';
+  const caption = 'Unique digital certificate of authenticity for this order';
   const captionX = (PAGE_WIDTH - caption.length * 5.1) / 2;
   const content = [
     `q ${PAGE_WIDTH} 0 0 ${imageHeight.toFixed(3)} 0 ${FOOTER_HEIGHT} cm /Certificate Do Q`,
@@ -63,7 +63,7 @@ export function createCertificatePdf(orderNumber: string) {
     object(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold >>'),
     object(6, '<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>'),
     object(7, combine([ascii(`<< /Length ${contentBytes.length} >>\nstream\n`), contentBytes, ascii('\nendstream')])),
-    object(8, `<< /Title (Certificate of Authenticity - ${pdfText(orderNumber)}) /Author (Dracula's Soil) >>`),
+    object(8, `<< /Title (Digital Certificate of Authenticity - ${pdfText(orderNumber)}) /Author (Dracula's Soil) >>`),
   ];
 
   const header = combine([ascii('%PDF-1.7\n%'), new Uint8Array([0xe2, 0xe3, 0xcf, 0xd3]), ascii('\n')]);
