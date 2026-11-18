@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useCart } from "./CartContext";
+import styles from "./Header.module.css";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -41,7 +42,7 @@ export function Header({ siteName }: { siteName: string }) {
             <Link
               key={link.label}
               href={link.href}
-              className="font-label text-xs tracking-[0.15em] text-stone transition-colors hover:text-gold-bright"
+              className={`${styles.bloodLink} font-label text-xs tracking-[0.15em] text-stone transition-colors hover:text-gold-bright`}
             >
               {link.label.toUpperCase()}
             </Link>
