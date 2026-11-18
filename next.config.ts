@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // Keep output tracing inside this app. A separate lockfile in the Windows
   // user profile would otherwise make Next.js trace the whole profile.
   outputFileTracingRoot: process.cwd(),
+  async redirects() {
+    return [{ source: "/cos", destination: "/cart", permanent: true }];
+  },
   async headers() {
     return [{ source: '/certificate', headers: [
       { key: 'Cache-Control', value: 'private, no-store, max-age=0' },

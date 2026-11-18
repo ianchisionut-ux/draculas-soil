@@ -1,0 +1,9 @@
+/videos/dracula-soil-hero-0f41b3a9.mp4
+  ! Cache-Control
+  Cache-Control: public, max-age=31556952, immutable
+  X-Content-Type-Options: nosniff
+
+/images/hero-video-poster-7edc6c51.webp
+  ! Cache-Control
+  Cache-Control: public, max-age=31556952, immutable
+  X-Content-Type-Options: nosniff

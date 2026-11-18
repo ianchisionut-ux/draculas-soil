@@ -20,13 +20,27 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const product = await getProduct(slug);
   if (!product) return {};
 
+  const title = product.metaTitle || product.name;
+  const description = digitalCertificateCopy(product.metaDesc || product.shortDesc);
+  const canonicalPath = `/product/${product.slug}`;
+  const image = product.images[0]?.url;
+
   return {
-    title: product.metaTitle || product.name,
-    description: digitalCertificateCopy(product.metaDesc || product.shortDesc),
+    title,
+    description,
+    alternates: { canonical: canonicalPath },
     openGraph: {
-      title: product.metaTitle || product.name,
-      description: digitalCertificateCopy(product.metaDesc || product.shortDesc),
-      images: product.images[0] ? [product.images[0].url] : undefined,
+      title,
+      description,
+      url: canonicalPath,
+      type: "website",
+      images: image ? [{ url: image, alt: product.name }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: image ? [image] : undefined,
     },
   };
 }
@@ -37,7 +51,7 @@ export default async function ProductPage({ params }: Params) {
   if (!product) notFound();
 
   const inStock = !product.trackStock || product.stock > 0;
-  const siteUrl = process.env.SITE_URL || "https://example.com";
+  const siteUrl = (process.env.SITE_URL || "https://example.com").replace(/\/$/, "");
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -46,6 +60,8 @@ export default async function ProductPage({ params }: Params) {
     description: digitalCertificateCopy(product.shortDesc),
     image: product.images.map((i) => i.url),
     sku: product.sku || undefined,
+    brand: { "@id": `${siteUrl}/#organization` },
+    itemCondition: "https://schema.org/NewCondition",
     offers: {
       "@type": "Offer",
       url: `${siteUrl}/product/${product.slug}`,
@@ -54,6 +70,7 @@ export default async function ProductPage({ params }: Params) {
       availability: inStock
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
+      seller: { "@id": `${siteUrl}/#organization` },
     },
   };
 
@@ -61,7 +78,9 @@ export default async function ProductPage({ params }: Params) {
     <div className="mx-auto max-w-6xl px-6 py-16">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <div className="grid gap-12 md:grid-cols-2">
         <ProductGallery images={product.images} productName={product.name} />

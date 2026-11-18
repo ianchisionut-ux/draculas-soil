@@ -4,6 +4,7 @@ import { getSettings } from "@/lib/settings";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "How this website collects, uses, and protects your personal information.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default async function PrivacyPage() {

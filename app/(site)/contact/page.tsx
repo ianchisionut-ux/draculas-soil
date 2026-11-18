@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "About Us & Contact",
   description:
     "Learn the story behind Dracula's Soil and get in touch with our team for any questions or after-sales support.",
+  alternates: { canonical: "/contact" },
 };
 
 export default async function ContactPage() {
