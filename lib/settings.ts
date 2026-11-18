@@ -20,7 +20,6 @@ export const SETTING_DEFAULTS = {
   shipping_flat_cents: "1500",
   free_shipping_threshold_cents: "10000",
   shipping_world_cents: "0",
-  shipping_australia_cents: "0",
   stripe_publishable_key: "",
   stripe_secret_key: "",
   stripe_webhook_secret: "",

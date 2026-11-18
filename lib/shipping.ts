@@ -9,15 +9,8 @@ export const SHIPPING_COUNTRIES = [
 
 export type ShippingCountry = (typeof SHIPPING_COUNTRIES)[number];
 
-const EUROPE = new Set<string>([
-  "GB", "IE", "RO", "DE", "FR", "IT", "ES", "PT", "NL", "BE", "LU", "AT",
-  "CH", "SE", "NO", "DK", "FI", "IS", "PL", "CZ", "SK", "HU", "SI", "HR",
-  "BG", "GR", "EE", "LV", "LT", "MT", "CY", "LI", "MC", "AD", "SM",
-]);
-
-export function shippingZone(country: ShippingCountry): "europe" | "australia" | "world" {
-  if (country === "AU") return "australia";
-  return EUROPE.has(country) ? "europe" : "world";
+export function shippingZone(country: ShippingCountry): "us" | "world" {
+  return country === "US" ? "us" : "world";
 }
 
 export function shippingCost(
@@ -27,16 +20,17 @@ export function shippingCost(
     shipping_flat_cents: string;
     free_shipping_threshold_cents: string;
     shipping_world_cents: string;
-    shipping_australia_cents: string;
   }
 ): number | null {
   const zone = shippingZone(country);
-  if (zone !== "europe") {
-    const value = Number(zone === "australia" ? settings.shipping_australia_cents : settings.shipping_world_cents);
+  if (zone === "world") {
+    const value = Number(settings.shipping_world_cents);
     return Number.isSafeInteger(value) && value > 0 ? value : null;
   }
+
   const flat = Number(settings.shipping_flat_cents);
   const threshold = Number(settings.free_shipping_threshold_cents);
   if (!Number.isSafeInteger(flat) || flat < 0 || !Number.isSafeInteger(threshold) || threshold < 0) return null;
-  return threshold > 0 && subtotalCents >= threshold ? 0 : flat;
+  if (threshold > 0 && subtotalCents >= threshold) return 0;
+  return flat > 0 ? flat : null;
 }

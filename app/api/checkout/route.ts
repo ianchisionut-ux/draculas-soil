@@ -55,7 +55,6 @@ export async function POST(req: NextRequest) {
       "shipping_flat_cents",
       "free_shipping_threshold_cents",
       "shipping_world_cents",
-      "shipping_australia_cents",
     ]);
     const currency = settings.currency || "usd";
 
@@ -68,7 +67,6 @@ export async function POST(req: NextRequest) {
       shipping_flat_cents: settings.shipping_flat_cents,
       free_shipping_threshold_cents: settings.free_shipping_threshold_cents,
       shipping_world_cents: settings.shipping_world_cents,
-      shipping_australia_cents: settings.shipping_australia_cents,
     });
     if (shippingCents === null) {
       return NextResponse.json(

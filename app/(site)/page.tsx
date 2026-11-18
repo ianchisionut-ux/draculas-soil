@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 const TRUST_BADGES = [
   { icon: IconCertificate, label: "Digital certificate of authenticity", desc: "Included with every order" },
   { icon: IconGlobe, label: "Worldwide shipping", desc: "70+ countries" },
-  { icon: IconTruck, label: "Free shipping", desc: "On eligible orders" },
+  { icon: IconTruck, label: "Free shipping", desc: "In the US" },
   { icon: IconShieldCheck, label: "30-day guarantee", desc: "Money back, no questions asked" },
 ];
 

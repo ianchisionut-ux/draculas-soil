@@ -31,8 +31,8 @@ export function SiteSettingsForm({ settings }: { settings: Record<string, string
           />
         </div>
         <Field
-          label="Europe standard shipping cost"
-          name="shipping_flat"
+          label="US standard shipping cost"
+          name="shipping_us"
           type="number"
           step="0.01"
           defaultValue={(parseInt(settings.shipping_flat_cents || "0", 10) / 100).toFixed(2)}
@@ -44,16 +44,12 @@ export function SiteSettingsForm({ settings }: { settings: Record<string, string
           step="0.01"
           defaultValue={(parseInt(settings.free_shipping_threshold_cents || "0", 10) / 100).toFixed(2)}
         />
-        <p className="text-xs text-stone">The free shipping threshold applies to Europe only. A zero rate below blocks checkout for that region until you set a price.</p>
+        <p className="text-xs text-stone">
+          The free shipping threshold applies to the US only. A zero US rate blocks checkout
+          below the threshold until you set a price.
+        </p>
         <Field
-          label="Australia shipping cost"
-          name="shipping_australia"
-          type="number"
-          step="0.01"
-          defaultValue={(parseInt(settings.shipping_australia_cents || "0", 10) / 100).toFixed(2)}
-        />
-        <Field
-          label="Other countries outside Europe shipping cost"
+          label="Rest of world shipping cost"
           name="shipping_world"
           type="number"
           step="0.01"
