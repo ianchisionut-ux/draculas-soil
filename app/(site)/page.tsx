@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { ProductShowcase } from "@/components/site/ProductShowcase";
 import { AddToCartHero } from "@/components/site/AddToCartHero";
+import { HeroMedia } from "@/components/site/HeroMedia";
 import {
   IconCertificate,
   IconGlobe,
@@ -74,15 +75,9 @@ export default async function HomePage() {
     <>
       {/* HERO */}
       <section className="relative overflow-hidden border-b border-line">
-        <Image
-          src="/images/hero.png"
-          alt="Dracula's Soil bottle and box in front of Bran Castle at night"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-void via-void/70 to-transparent" />
+        <HeroMedia />
+        <div className="absolute inset-0 bg-gradient-to-r from-void via-void/75 to-void/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-void/65 via-transparent to-void/20" />
 
         <div className="relative mx-auto flex min-h-[600px] max-w-7xl items-center px-6 py-20 md:py-28">
           <div className="max-w-xl">
