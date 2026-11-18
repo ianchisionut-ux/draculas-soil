@@ -2,8 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-const VIDEO_SRC = "/videos/dracula-soil-hero-0f41b3a9.mp4";
-const REPLAY_DELAY_MS = 7_000;
+const VIDEO_SRC = "/videos/dracula-soil-hero-pingpong-95e638da.mp4";
 
 export function HeroMedia() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -14,24 +13,13 @@ export function HeroMedia() {
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let isInView = true;
-    let waitingForReplay = false;
-    let replayTimer: number | undefined;
 
     const playWhenAllowed = () => {
       if (reducedMotion.matches) {
         video.pause();
-      } else if (isInView && !document.hidden && !waitingForReplay) {
+      } else if (isInView && !document.hidden) {
         void video.play().catch(() => undefined);
       }
-    };
-
-    const handleEnded = () => {
-      waitingForReplay = true;
-      replayTimer = window.setTimeout(() => {
-        video.currentTime = 0;
-        waitingForReplay = false;
-        playWhenAllowed();
-      }, REPLAY_DELAY_MS);
     };
 
     const observer = new IntersectionObserver(
@@ -48,7 +36,6 @@ export function HeroMedia() {
       else playWhenAllowed();
     };
 
-    video.addEventListener("ended", handleEnded);
     reducedMotion.addEventListener("change", playWhenAllowed);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     observer.observe(video);
@@ -58,9 +45,7 @@ export function HeroMedia() {
       video.pause();
       observer.disconnect();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      video.removeEventListener("ended", handleEnded);
       reducedMotion.removeEventListener("change", playWhenAllowed);
-      if (replayTimer !== undefined) window.clearTimeout(replayTimer);
     };
   }, []);
 
@@ -70,6 +55,7 @@ export function HeroMedia() {
         ref={videoRef}
         src={VIDEO_SRC}
         autoPlay
+        loop
         muted
         playsInline
         preload="auto"
