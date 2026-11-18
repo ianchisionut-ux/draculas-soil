@@ -80,10 +80,15 @@ export default async function HomePage() {
     <>
       {/* HERO */}
       <section className="relative overflow-hidden border-b border-line">
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden bg-black">
           <HeroMedia />
-          <div className="absolute inset-0 bg-gradient-to-r from-void/90 via-void/45 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-void/35 via-transparent to-void/10" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(90deg, #050403 0%, #050403 22%, rgba(5, 4, 3, 0.9) 32%, rgba(5, 4, 3, 0.42) 42%, transparent 50%)",
+            }}
+          />
 
           <div className="relative mx-auto flex min-h-[600px] max-w-7xl items-center px-6 py-20 md:py-28">
             <div className="max-w-xl">
